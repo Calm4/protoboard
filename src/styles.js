@@ -98,6 +98,11 @@ export const css = `
 .pb-row:hover { background:var(--surface2); }
 .pb-row.header { background:var(--surface2); font-family:'Space Mono'; font-size:11px; letter-spacing:.04em; color:var(--soft); text-transform:uppercase; cursor:default; }
 .pb-row.header:hover { background:var(--surface2); }
+.pb-row.group { display:flex; align-items:center; gap:8px; background:var(--surface2); cursor:default; padding:9px 16px; }
+.pb-row.group:hover { background:var(--surface2); }
+.pb-row.group .gdot { width:8px; height:8px; border-radius:99px; }
+.pb-row.group .gname { font-family:'Space Grotesk'; font-weight:600; font-size:12.5px; }
+.pb-row.group .gcount { font-family:'Space Mono'; font-size:11px; color:var(--soft); }
 .pb-rowtitle b { font-weight:600; font-size:13.5px; }
 .pb-rowtitle .sub { display:block; font-size:12px; color:var(--soft); margin-top:2px; }
 .pb-select { font-family:'Inter'; font-size:12.5px; font-weight:600; border:1px solid var(--line); border-radius:8px; padding:5px 7px; background:var(--surface); color:var(--ink); cursor:pointer; }

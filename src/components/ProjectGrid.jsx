@@ -8,7 +8,6 @@ export default function ProjectGrid({
       <div className="pb-top">
         <div className="pb-brand">
           <span className="pb-logo">Proto<b>board</b></span>
-          <span className="pb-tag">прототип · этап 1</span>
         </div>
         <button className="pb-btn primary" onClick={onNewProject}>+ Новый проект</button>
       </div>

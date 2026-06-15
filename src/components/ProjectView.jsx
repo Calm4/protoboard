@@ -6,7 +6,7 @@ import { EditableInput } from "./Editable.jsx";
 // Доска/Список, фильтр по платформе и сам контент (доска или таблица).
 export default function ProjectView({
   project, view, onSetView, platFilter, onSetPlatFilter,
-  visibleTasks, onBack, onSetName, onSetBuild, onAddTask, onMoveTask, onOpenTask,
+  visibleTasks, onBack, onSetName, onSetBuild, onAddTask, onMoveTask, onSetPriority, onOpenTask,
 }) {
   return (
     <>
@@ -56,6 +56,7 @@ export default function ProjectView({
         <TaskList
           tasks={visibleTasks}
           onMoveTask={onMoveTask}
+          onSetPriority={onSetPriority}
           onOpenTask={onOpenTask}
         />
       )}
