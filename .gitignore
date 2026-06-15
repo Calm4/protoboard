@@ -1,0 +1,13 @@
+# Зависимости
+node_modules
+
+# Сборка
+dist
+
+# Секреты — твои ключи Supabase живут только локально и в Cloudflare
+.env.local
+.env
+
+# Системный мусор
+.DS_Store
+*.log
