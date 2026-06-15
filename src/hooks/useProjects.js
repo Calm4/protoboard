@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase, isConfigured, SHOTS_BUCKET, shotUrl } from "../lib/supabase.js";
 import { compressImage } from "../lib/image.js";
-import { DEFAULT_COLOR } from "../constants.js";
+import { DEFAULT_COLOR, DEFAULT_STATUSES, PROJECT_COLORS } from "../constants.js";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Единственное место, где живут данные. Теперь они в Supabase:
@@ -38,6 +38,7 @@ const rowToProject = (row) => ({
   build: row.build,
   archived: row.archived,
   color: row.color || DEFAULT_COLOR,
+  statuses: row.statuses && row.statuses.length ? row.statuses : DEFAULT_STATUSES,
   tasks: [],
 });
 const rowToShot = (row) => ({
@@ -136,6 +137,7 @@ export function useProjects() {
       patchProjectLocal(row.id, (p) => ({
         ...p, name: row.name, build: row.build, archived: row.archived,
         color: row.color || DEFAULT_COLOR,
+        statuses: row.statuses && row.statuses.length ? row.statuses : DEFAULT_STATUSES,
       }));
     }
   }
@@ -189,14 +191,53 @@ export function useProjects() {
     const trimmed = (name || "").trim();
     if (!trimmed) return null;
     const id = newId();
-    const proj = { id, name: trimmed, build: "v0.1", archived: false, color, tasks: [] };
+    const statuses = DEFAULT_STATUSES;
+    const proj = { id, name: trimmed, build: "v0.1", archived: false, color, statuses, tasks: [] };
     setProjects((ps) => [proj, ...ps]); // оптимистично
-    run(supabase.from("projects").insert({ id, name: trimmed, build: "v0.1", archived: false, color }));
+    run(supabase.from("projects").insert({ id, name: trimmed, build: "v0.1", archived: false, color, statuses }));
     return proj;
   };
   const setColor = (id, color) => {
     patchProjectLocal(id, (p) => ({ ...p, color }));
     run(supabase.from("projects").update({ color }).eq("id", id));
+  };
+
+  // ── Статусы (колонки) проекта ──────────────────────────────────────────────
+  // Хранятся списком в projects.statuses; пишем весь список целиком.
+  const writeStatuses = (pid, statuses) => {
+    patchProjectLocal(pid, (p) => ({ ...p, statuses }));
+    run(supabase.from("projects").update({ statuses }).eq("id", pid));
+  };
+  const addStatus = (pid) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj) return;
+    const used = proj.statuses.map((s) => s.color);
+    const color = PROJECT_COLORS.find((c) => !used.includes(c)) || PROJECT_COLORS[0];
+    writeStatuses(pid, [...proj.statuses, { id: newId(), label: "Новый статус", color }]);
+  };
+  const renameStatus = (pid, sid, label) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj) return;
+    writeStatuses(pid, proj.statuses.map((s) => (s.id === sid ? { ...s, label } : s)));
+  };
+  const recolorStatus = (pid, sid, color) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj) return;
+    writeStatuses(pid, proj.statuses.map((s) => (s.id === sid ? { ...s, color } : s)));
+  };
+  const reorderStatuses = (pid, ordered) => writeStatuses(pid, ordered);
+  const deleteStatus = (pid, sid) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj || proj.statuses.length <= 1) return; // последний статус не удаляем
+    const remaining = proj.statuses.filter((s) => s.id !== sid);
+    const target = remaining[0].id; // задачи удаляемой колонки уезжают в первую
+    patchProjectLocal(pid, (p) => ({
+      ...p,
+      statuses: remaining,
+      tasks: p.tasks.map((t) => (t.status === sid ? { ...t, status: target } : t)),
+    }));
+    run(supabase.from("projects").update({ statuses: remaining }).eq("id", pid));
+    run(supabase.from("tasks").update({ status: target }).eq("project_id", pid).eq("status", sid));
   };
   // Название и версия проекта фиксируются по Enter/клику мимо (см. Editable.jsx),
   // поэтому пишем сразу — это уже разовое сохранение, а не «на каждую букву».
@@ -294,6 +335,7 @@ export function useProjects() {
   return {
     projects,
     createProject, setName, setColor, setArchived, setBuild,
+    addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, editTask, deleteTask,
     addShots, removeShot,
   };

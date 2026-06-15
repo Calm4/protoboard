@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
-import { STATUSES, PRIORITIES, PLATFORMS } from "../constants.js";
+import { PRIORITIES, PLATFORMS } from "../constants.js";
 import { EditableInput, EditableTextarea } from "./Editable.jsx";
 import { downloadImage } from "../lib/image.js";
 
 // Боковая панель редактирования задачи: статус, приоритет, платформа, версия,
 // описание, доп. инфо и скриншоты. Открывается поверх затемнённого фона.
-export default function TaskPanel({ task, onClose, onEdit, onMoveTask, onDelete, onAddShots, onRemoveShot }) {
+export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask, onDelete, onAddShots, onRemoveShot }) {
   const fileRef = useRef(null);
   const [zoom, setZoom] = useState(null); // ссылка на скриншот, открытый на весь экран
 
@@ -31,8 +31,13 @@ export default function TaskPanel({ task, onClose, onEdit, onMoveTask, onDelete,
         <div className="pb-field">
           <label>Статус</label>
           <div className="pb-seg">
-            {STATUSES.map((s) => (
-              <button key={s.key} className={(task.status === s.key ? "on s-" + s.key : "")} onClick={() => onMoveTask(s.key)}>{s.label}</button>
+            {statuses.map((s) => (
+              <button
+                key={s.id}
+                className={task.status === s.id ? "on" : ""}
+                style={task.status === s.id ? { background: s.color, borderColor: s.color, color: "#fff" } : undefined}
+                onClick={() => onMoveTask(s.id)}
+              >{s.label}</button>
             ))}
           </div>
         </div>

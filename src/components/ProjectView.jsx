@@ -8,8 +8,9 @@ import ColorSwatches from "./ColorSwatches.jsx";
 // Доска/Список, фильтр по платформе и сам контент (доска или таблица).
 export default function ProjectView({
   project, view, onSetView, platFilter, onSetPlatFilter,
-  visibleTasks, onBack, onSetName, onSetColor, onSetBuild, onAddTask, onMoveTask, onSetPriority, onOpenTask,
+  visibleTasks, onBack, onSetName, onSetColor, onSetBuild, onAddTask, onMoveTask, onSetPriority, onOpenTask, statusActions,
 }) {
+  const statuses = project.statuses;
   const [palette, setPalette] = useState(false);
   return (
     <>
@@ -51,7 +52,7 @@ export default function ProjectView({
             <button className={view === "board" ? "on" : ""} onClick={() => onSetView("board")}>Доска</button>
             <button className={view === "list" ? "on" : ""} onClick={() => onSetView("list")}>Список</button>
           </div>
-          <button className="pb-btn primary" onClick={() => onAddTask("todo")}>+ Задача</button>
+          <button className="pb-btn primary" onClick={() => onAddTask(statuses[0]?.id)}>+ Задача</button>
         </div>
       </div>
 
@@ -67,6 +68,8 @@ export default function ProjectView({
       {view === "board" ? (
         <Board
           tasks={visibleTasks}
+          statuses={statuses}
+          statusActions={statusActions}
           onMoveTask={onMoveTask}
           onOpenTask={onOpenTask}
           onAddTask={onAddTask}
@@ -74,6 +77,7 @@ export default function ProjectView({
       ) : (
         <TaskList
           tasks={visibleTasks}
+          statuses={statuses}
           onMoveTask={onMoveTask}
           onSetPriority={onSetPriority}
           onOpenTask={onOpenTask}

@@ -18,6 +18,7 @@ export default function Protoboard() {
   // Данные и операции (на шаге 3 этот хук переехал на Supabase).
   const {
     projects, createProject, setName, setColor, setArchived, setBuild,
+    addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, editTask, deleteTask, addShots, removeShot,
   } = useProjects();
 
@@ -86,6 +87,13 @@ export default function Protoboard() {
             onMoveTask={(tid, status) => moveTask(openId, tid, status)}
             onSetPriority={(tid, priority) => editTask(openId, tid, { priority })}
             onOpenTask={setTaskId}
+            statusActions={{
+              add: () => addStatus(openId),
+              rename: (sid, label) => renameStatus(openId, sid, label),
+              recolor: (sid, color) => recolorStatus(openId, sid, color),
+              reorder: (ordered) => reorderStatuses(openId, ordered),
+              remove: (sid) => deleteStatus(openId, sid),
+            }}
           />
         )}
       </div>
@@ -94,6 +102,7 @@ export default function Protoboard() {
       {task && (
         <TaskPanel
           task={task}
+          statuses={project.statuses}
           onClose={() => setTaskId(null)}
           onEdit={(patch) => editTask(openId, taskId, patch)}
           onMoveTask={(status) => moveTask(openId, taskId, status)}
