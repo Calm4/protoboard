@@ -1,9 +1,20 @@
-import { Fragment } from "react";
+import { useRef, useState } from "react";
 import { STATUSES, PRIORITIES, platLabel, statusColor, PRIO_UI, STATUS_UI } from "../constants.js";
 
-// Табличный вид: задачи сгруппированы по статусу (To Do / Ready to Check / Done).
-// Статус и приоритет можно менять прямо в строке, не открывая задачу.
+// Табличный вид: задачи сгруппированы по статусу. Статус/приоритет меняются прямо
+// в строке, а ещё задачу можно перетащить мышью в другую секцию (как на доске).
 export default function TaskList({ tasks, onMoveTask, onSetPriority, onOpenTask }) {
+  const dragId = useRef(null);
+  const [dragging, setDragging] = useState(false); // тянем ли сейчас задачу
+  const [dragOver, setDragOver] = useState(null);   // над какой секцией
+
+  const startDrag = (id) => { dragId.current = id; setDragging(true); };
+  const endDrag = () => { dragId.current = null; setDragging(false); setDragOver(null); };
+  const onDrop = (status) => {
+    if (dragId.current) onMoveTask(dragId.current, status);
+    endDrag();
+  };
+
   return (
     <div className="pb-list">
       <div className="pb-row header">
@@ -14,20 +25,34 @@ export default function TaskList({ tasks, onMoveTask, onSetPriority, onOpenTask 
         <span>Статус</span>
       </div>
 
-      {tasks.length === 0 && <div className="pb-empty">Нет задач под этот фильтр.</div>}
+      {tasks.length === 0 && !dragging && <div className="pb-empty">Нет задач под этот фильтр.</div>}
 
       {STATUSES.map((s) => {
         const items = tasks.filter((t) => t.status === s.key);
-        if (items.length === 0) return null;
+        // Пустые секции прячем, но во время перетаскивания показываем — чтобы было куда бросить.
+        if (items.length === 0 && !dragging) return null;
         return (
-          <Fragment key={s.key}>
+          <div
+            key={s.key}
+            className={"pb-listgroup" + (dragOver === s.key ? " over" : "")}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(s.key); }}
+            onDragLeave={() => setDragOver((d) => (d === s.key ? null : d))}
+            onDrop={() => onDrop(s.key)}
+          >
             <div className="pb-row group">
               <span className="gdot" style={{ background: statusColor[s.key] }} />
               <span className="gname">{s.label}</span>
               <span className="gcount">{items.length}</span>
             </div>
             {items.map((t) => (
-              <div key={t.id} className="pb-row" onClick={() => onOpenTask(t.id)}>
+              <div
+                key={t.id}
+                className="pb-row"
+                draggable
+                onDragStart={() => startDrag(t.id)}
+                onDragEnd={endDrag}
+                onClick={() => onOpenTask(t.id)}
+              >
                 <div className="pb-rowtitle">
                   <b>{t.title}</b>
                 </div>
@@ -55,7 +80,8 @@ export default function TaskList({ tasks, onMoveTask, onSetPriority, onOpenTask 
                 </span>
               </div>
             ))}
-          </Fragment>
+            {items.length === 0 && dragging && <div className="pb-dropzone">Перетащи сюда</div>}
+          </div>
         );
       })}
     </div>

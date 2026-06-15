@@ -103,6 +103,12 @@ export const css = `
 .pb-row.group .gdot { width:8px; height:8px; border-radius:99px; }
 .pb-row.group .gname { font-family:'Space Grotesk'; font-weight:600; font-size:12.5px; }
 .pb-row.group .gcount { font-family:'Space Mono'; font-size:11px; color:var(--soft); }
+.pb-listgroup { transition:background .12s; }
+.pb-listgroup.over { background:var(--accent-soft); box-shadow:inset 0 0 0 2px var(--accent); }
+.pb-listgroup.over .pb-row { background:transparent; }
+.pb-dropzone { padding:14px 16px; text-align:center; color:var(--accent); font-size:12.5px; font-weight:600; border-bottom:1px solid var(--line); }
+.pb-list .pb-row[draggable="true"] { cursor:grab; }
+.pb-list .pb-row[draggable="true"]:active { cursor:grabbing; }
 .pb-rowtitle b { font-weight:600; font-size:13.5px; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .pb-rowtitle .sub { display:block; font-size:12px; color:var(--soft); margin-top:2px; }
 .pb-select { font-family:'Inter'; font-size:12.5px; font-weight:600; border:1px solid var(--line); border-radius:8px; padding:5px 7px; background:var(--surface); color:var(--ink); cursor:pointer; }
@@ -161,6 +167,8 @@ export const css = `
 /* просмотр скриншота в полном размере */
 .pb-lightbox { position:fixed; inset:0; background:rgba(15,17,26,.82); z-index:60; display:flex; align-items:center; justify-content:center; padding:32px; cursor:zoom-out; animation:pbfade .15s ease; }
 .pb-lightbox img { max-width:92vw; max-height:92vh; border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.pb-lightbox .dl { position:fixed; top:20px; right:20px; z-index:61; border:none; background:rgba(255,255,255,.92); color:var(--ink); font-family:'Inter'; font-weight:600; font-size:13px; padding:9px 14px; border-radius:9px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.25); }
+.pb-lightbox .dl:hover { background:#fff; }
 
 /* modal */
 .pb-modal { position:fixed; z-index:50; top:50%; left:50%; transform:translate(-50%,-50%); width:min(380px,92vw); background:var(--surface); border-radius:16px; padding:22px; box-shadow:0 20px 60px rgba(15,17,26,.28); animation:pbpop .16s ease; }

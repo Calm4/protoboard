@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { STATUSES, PRIORITIES, PLATFORMS } from "../constants.js";
 import { EditableInput, EditableTextarea } from "./Editable.jsx";
+import { downloadImage } from "../lib/image.js";
 
 // Боковая панель редактирования задачи: статус, приоритет, платформа, версия,
 // описание, доп. инфо и скриншоты. Открывается поверх затемнённого фона.
@@ -64,7 +65,7 @@ export default function TaskPanel({ task, onClose, onEdit, onMoveTask, onDelete,
           <div className="pb-shots">
             {task.shots.map((s) => (
               <div key={s.id} className="pb-shotthumb">
-                <img src={s.url} alt={s.name} title="Открыть в полном размере" onClick={() => setZoom(s.url)} />
+                <img src={s.url} alt={s.name} title="Открыть в полном размере" onClick={() => setZoom(s)} />
                 <button onClick={() => onRemoveShot(s.id)}>✕</button>
               </div>
             ))}
@@ -75,10 +76,15 @@ export default function TaskPanel({ task, onClose, onEdit, onMoveTask, onDelete,
         <button className="pb-paneldelete" onClick={onDelete}>Удалить задачу</button>
       </div>
 
-      {/* Просмотр скриншота на весь экран. Клик по фону или картинке — закрыть. */}
+      {/* Просмотр скриншота на весь экран. Клик по фону — закрыть. */}
       {zoom && (
         <div className="pb-lightbox" onClick={() => setZoom(null)}>
-          <img src={zoom} alt="Скриншот" />
+          <button
+            className="dl"
+            title="Скачать на компьютер"
+            onClick={(e) => { e.stopPropagation(); downloadImage(zoom.url, zoom.name); }}
+          >↓ Скачать</button>
+          <img src={zoom.url} alt={zoom.name} />
         </div>
       )}
     </>

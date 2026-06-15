@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase, isConfigured, SHOTS_BUCKET, shotUrl } from "../lib/supabase.js";
+import { compressImage } from "../lib/image.js";
 import { DEFAULT_COLOR } from "../constants.js";
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -255,26 +256,25 @@ export function useProjects() {
   const addShots = (pid, tid, files) => {
     files.forEach((file) => {
       const id = newId();
-      // Имя файла в хранилище делаем безопасным (только латиница/цифры): Storage
-      // не принимает пробелы, тире «—» и кириллицу. Настоящее имя файла храним
-      // отдельно в attachments.name и показываем его пользователю.
-      const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
-      const path = `${tid}/${id}.${ext}`;
-      // Мгновенное превью из памяти браузера, пока идёт загрузка.
+      // Мгновенное превью из памяти браузера (оригинал), пока идёт сжатие и загрузка.
       const localUrl = URL.createObjectURL(file);
       patchTaskLocal(pid, tid, (t) => ({
-        ...t, shots: [...t.shots, { id, name: file.name, path, url: localUrl }],
+        ...t, shots: [...t.shots, { id, name: file.name, path: null, url: localUrl }],
       }));
       (async () => {
-        const up = await supabase.storage.from(SHOTS_BUCKET).upload(path, file);
+        // Сжимаем перед загрузкой. Имя в Storage делаем безопасным (латиница/цифры),
+        // настоящее имя файла храним в attachments.name.
+        const { blob, contentType, ext } = await compressImage(file);
+        const path = `${tid}/${id}.${ext}`;
+        const up = await supabase.storage.from(SHOTS_BUCKET).upload(path, blob, { contentType });
         if (up.error) {
           console.error("[Protoboard] Не удалось загрузить файл:", up.error.message);
           return;
         }
-        // После загрузки подменяем локальную ссылку на постоянную публичную.
+        // После загрузки подменяем локальную ссылку на постоянную публичную и сохраняем путь.
         const publicUrl = shotUrl(path);
         patchTaskLocal(pid, tid, (t) => ({
-          ...t, shots: t.shots.map((s) => (s.id === id ? { ...s, url: publicUrl } : s)),
+          ...t, shots: t.shots.map((s) => (s.id === id ? { ...s, url: publicUrl, path } : s)),
         }));
         run(supabase.from("attachments").insert({ id, task_id: tid, file_path: path, name: file.name }));
       })();
