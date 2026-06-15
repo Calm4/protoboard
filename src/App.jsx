@@ -86,6 +86,7 @@ export default function Protoboard() {
             onAddTask={handleAddTask}
             onMoveTask={(tid, status) => moveTask(openId, tid, status)}
             onSetPriority={(tid, priority) => editTask(openId, tid, { priority })}
+            onSetPlatform={(tid, platform) => editTask(openId, tid, { platform })}
             onOpenTask={setTaskId}
             statusActions={{
               add: () => addStatus(openId),

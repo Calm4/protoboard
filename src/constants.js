@@ -42,3 +42,8 @@ export const PRIO_UI = {
   med: { fg: "#9A6711", bg: "#FBF1DC", bd: "#EEDFB6" },
   low: { fg: "#4B5566", bg: "#EDEFF5", bd: "#DDE1EC" },
 };
+export const PLAT_UI = {
+  both: { fg: "#5B6373", bg: "#EDEFF5", bd: "#DDE1EC" },
+  ios: { fg: "#2C5BB5", bg: "#E5ECF9", bd: "#CFE0F4" },
+  android: { fg: "#1C7A4A", bg: "#E1F2E8", bd: "#C5E6D2" },
+};

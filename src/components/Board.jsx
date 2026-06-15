@@ -1,16 +1,40 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { PRIORITIES, platLabel } from "../constants.js";
-import { EditableInput } from "./Editable.jsx";
-import ColorSwatches from "./ColorSwatches.jsx";
+import StatusMenu from "./StatusMenu.jsx";
 
 // Доска: колонки = статусы проекта. Карточки перетаскиваются между колонками,
 // сами колонки можно добавлять, переименовывать, перекрашивать, удалять и менять
-// их порядок (перетаскиванием за шапку).
+// их порядок (перетаскиванием за шапку). Сверху и снизу — горизонтальный скролбар.
 export default function Board({ tasks, statuses, statusActions, onMoveTask, onOpenTask, onAddTask }) {
   const cardDrag = useRef(null); // id перетаскиваемой задачи
   const colDrag = useRef(null);  // id перетаскиваемой колонки
   const [dragOver, setDragOver] = useState(null);
   const [menuFor, setMenuFor] = useState(null); // у какой колонки открыто меню
+
+  // Верхний скролбар: отдельная полоса над доской, ширина которой равна полной
+  // ширине доски; прокрутка синхронизируется с самой доской в обе стороны.
+  const boardRef = useRef(null);
+  const topRef = useRef(null);
+  const syncing = useRef(false);
+  const [scrollW, setScrollW] = useState(0);
+
+  useEffect(() => {
+    const b = boardRef.current;
+    if (!b) return;
+    const update = () => setScrollW(b.scrollWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(b);
+    window.addEventListener("resize", update);
+    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
+  }, [statuses.length]);
+
+  const syncFrom = (src, dst) => {
+    if (syncing.current) return;
+    syncing.current = true;
+    dst.scrollLeft = src.scrollLeft;
+    syncing.current = false;
+  };
 
   const handleDrop = (statusId) => {
     if (cardDrag.current) {
@@ -29,7 +53,19 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onOp
   };
 
   return (
-    <div className="pb-board">
+    <>
+      <div
+        className="pb-board-topscroll"
+        ref={topRef}
+        onScroll={() => syncFrom(topRef.current, boardRef.current)}
+      >
+        <div style={{ width: scrollW }} />
+      </div>
+      <div
+        className="pb-board"
+        ref={boardRef}
+        onScroll={() => syncFrom(boardRef.current, topRef.current)}
+      >
       {statuses.map((s) => {
         const items = tasks.filter((t) => t.status === s.id);
         return (
@@ -57,26 +93,12 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onOp
             </div>
 
             {menuFor === s.id && (
-              <>
-                <div className="pb-colmenu-scrim" onClick={() => setMenuFor(null)} />
-                <div className="pb-colmenu" onClick={(e) => e.stopPropagation()}>
-                  <label className="pb-colmenu-lbl">Название</label>
-                  <EditableInput className="pb-input" value={s.label} onCommit={(v) => statusActions.rename(s.id, v)} />
-                  <label className="pb-colmenu-lbl">Цвет</label>
-                  <ColorSwatches value={s.color} onChange={(c) => statusActions.recolor(s.id, c)} />
-                  {statuses.length > 1 && (
-                    <button
-                      className="pb-colmenu-del"
-                      onClick={() => {
-                        if (window.confirm(`Удалить колонку «${s.label}»? Её задачи переедут в первую колонку.`)) {
-                          statusActions.remove(s.id);
-                          setMenuFor(null);
-                        }
-                      }}
-                    >Удалить колонку</button>
-                  )}
-                </div>
-              </>
+              <StatusMenu
+                status={s}
+                canDelete={statuses.length > 1}
+                statusActions={statusActions}
+                onClose={() => setMenuFor(null)}
+              />
             )}
 
             {items.map((t) => (
@@ -101,7 +123,8 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onOp
           </div>
         );
       })}
-      <button className="pb-addcol" onClick={statusActions.add} title="Добавить колонку">+ колонка</button>
-    </div>
+        <button className="pb-addcol" onClick={statusActions.add} title="Добавить колонку">+ колонка</button>
+      </div>
+    </>
   );
 }

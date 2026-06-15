@@ -25,6 +25,7 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
           className="pb-titlearea"
           value={task.title}
           rows={2}
+          autoGrow
           placeholder="Что нужно сделать или что за баг…"
           onCommit={(v) => onEdit({ title: v })}
         />
@@ -63,7 +64,7 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
         </div>
         <div className="pb-field">
           <label>Доп. условия / инфо</label>
-          <EditableTextarea className="pb-area" rows={2} value={task.notes} placeholder="Устройство, шаги воспроизведения…" onCommit={(v) => onEdit({ notes: v })} />
+          <EditableTextarea className="pb-area" rows={2} value={task.notes} autoGrow placeholder="Устройство, шаги воспроизведения…" onCommit={(v) => onEdit({ notes: v })} />
         </div>
         <div className="pb-field">
           <label>Скриншоты ({task.shots.length})</label>

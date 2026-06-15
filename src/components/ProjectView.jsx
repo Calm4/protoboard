@@ -8,7 +8,7 @@ import ColorSwatches from "./ColorSwatches.jsx";
 // Доска/Список, фильтр по платформе и сам контент (доска или таблица).
 export default function ProjectView({
   project, view, onSetView, platFilter, onSetPlatFilter,
-  visibleTasks, onBack, onSetName, onSetColor, onSetBuild, onAddTask, onMoveTask, onSetPriority, onOpenTask, statusActions,
+  visibleTasks, onBack, onSetName, onSetColor, onSetBuild, onAddTask, onMoveTask, onSetPriority, onSetPlatform, onOpenTask, statusActions,
 }) {
   const statuses = project.statuses;
   const [palette, setPalette] = useState(false);
@@ -78,8 +78,10 @@ export default function ProjectView({
         <TaskList
           tasks={visibleTasks}
           statuses={statuses}
+          statusActions={statusActions}
           onMoveTask={onMoveTask}
           onSetPriority={onSetPriority}
+          onSetPlatform={onSetPlatform}
           onOpenTask={onOpenTask}
         />
       )}

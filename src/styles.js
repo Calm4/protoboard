@@ -51,7 +51,7 @@ export const css = `
 .pb-phead { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
 .pb-ptitle { display:flex; align-items:center; gap:11px; }
 .pb-ptitle h1 { font-family:'Space Grotesk'; font-weight:700; font-size:26px; margin:0; letter-spacing:-.02em; }
-.pb-buildedit { font-family:'Space Mono'; font-size:12px; color:var(--accent); background:var(--accent-soft); border:1px solid transparent; padding:4px 8px; border-radius:6px; width:62px; cursor:text; }
+.pb-buildedit { font-family:'Space Mono'; font-size:12px; color:var(--accent); background:var(--accent-soft); border:1px solid transparent; padding:4px 8px; border-radius:6px; width:96px; cursor:text; }
 .pb-buildedit:hover { border-color:var(--accent); }
 .pb-buildedit:focus { outline:none; border-color:var(--accent); background:#fff; }
 .pb-switch { display:inline-flex; background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
@@ -67,6 +67,8 @@ export const css = `
 .pb-chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
 
 /* board */
+.pb-board-topscroll { overflow-x:auto; overflow-y:hidden; }
+.pb-board-topscroll > div { height:1px; }
 .pb-board { display:flex; gap:14px; align-items:stretch; overflow-x:auto; padding-bottom:8px; }
 .pb-col { position:relative; flex:1 1 0; min-width:200px; background:var(--surface2); border:1px solid var(--line); border-radius:14px; padding:12px; min-height:120px; transition:background .12s, border-color .12s; }
 .pb-col.over { background:var(--accent-soft); border-color:var(--accent); }
@@ -106,7 +108,8 @@ export const css = `
 
 /* list */
 .pb-list { background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
-.pb-row { display:grid; grid-template-columns:1fr 96px 72px 116px 150px; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--line); cursor:pointer; transition:background .1s; }
+.pb-row { display:grid; grid-template-columns:1fr 96px 96px 116px 150px; align-items:flex-start; gap:12px; padding:13px 16px; border-bottom:1px solid var(--line); cursor:pointer; transition:background .1s; }
+.pb-row.header { align-items:center; }
 .pb-row:last-child { border-bottom:none; }
 .pb-row:hover { background:var(--surface2); }
 .pb-row.header { background:var(--surface2); font-family:'Space Mono'; font-size:11px; letter-spacing:.04em; color:var(--soft); text-transform:uppercase; cursor:default; }
@@ -114,16 +117,20 @@ export const css = `
 .pb-row.group { display:flex; align-items:center; gap:8px; background:var(--surface2); cursor:default; padding:9px 16px; }
 .pb-row.group:hover { background:var(--surface2); }
 .pb-row.group .gdot { width:8px; height:8px; border-radius:99px; }
-.pb-row.group .gname { font-family:'Space Grotesk'; font-weight:600; font-size:12.5px; }
+.pb-row.group .gname { font-family:'Space Grotesk'; font-weight:600; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pb-row.group .gcount { font-family:'Space Mono'; font-size:11px; color:var(--soft); }
-.pb-listgroup { transition:background .12s; }
+.pb-row.group .pb-colmenu-btn { flex:0 0 auto; }
+.pb-listgroup { position:relative; transition:background .12s; }
+.pb-colmenu.inlist { left:auto; right:10px; width:240px; top:38px; }
+.pb-addstatus { display:block; width:100%; border:none; border-top:1px solid var(--line); background:transparent; color:var(--soft); padding:12px; cursor:pointer; font-family:'Inter'; font-size:13px; font-weight:600; }
+.pb-addstatus:hover { color:var(--accent); }
 .pb-listgroup.over { background:var(--accent-soft); box-shadow:inset 0 0 0 2px var(--accent); }
 .pb-listgroup.over .pb-row { background:transparent; }
 .pb-listempty { padding:11px 16px; color:var(--soft); font-size:12.5px; border-bottom:1px solid var(--line); }
 .pb-listgroup:last-child .pb-listempty { border-bottom:none; }
 .pb-list .pb-row[draggable="true"] { cursor:grab; }
 .pb-list .pb-row[draggable="true"]:active { cursor:grabbing; }
-.pb-rowtitle b { font-weight:600; font-size:13.5px; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.pb-rowtitle b { font-weight:600; font-size:13.5px; white-space:pre-wrap; word-break:break-word; }
 .pb-rowtitle .sub { display:block; font-size:12px; color:var(--soft); margin-top:2px; }
 .pb-select { font-family:'Inter'; font-size:12.5px; font-weight:600; border:1px solid var(--line); border-radius:8px; padding:5px 7px; background:var(--surface); color:var(--ink); cursor:pointer; }
 
@@ -136,11 +143,12 @@ export const css = `
 .pb-field { margin-bottom:18px; }
 .pb-field label { display:block; font-family:'Space Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--soft); margin-bottom:7px; }
 .pb-input, .pb-area { width:100%; font-family:'Inter'; font-size:14px; border:1px solid var(--line); border-radius:9px; padding:10px 11px; color:var(--ink); background:var(--surface); resize:vertical; }
+.pb-area { max-height:260px; overflow-y:auto; }
 .pb-input:focus, .pb-area:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
 .pb-input.mono { font-family:'Space Mono'; width:120px; }
 .pb-titleinput { font-family:'Space Grotesk'; font-weight:600; font-size:18px; border:none; width:100%; padding:0; margin:6px 0 16px; color:var(--ink); }
 .pb-titleinput:focus { outline:none; }
-.pb-titlearea { font-family:'Space Grotesk'; font-weight:600; font-size:18px; line-height:1.35; border:1px solid transparent; border-radius:8px; width:100%; padding:6px 8px; margin:6px -8px 16px; color:var(--ink); background:transparent; resize:vertical; min-height:54px; }
+.pb-titlearea { font-family:'Space Grotesk'; font-weight:600; font-size:18px; line-height:1.35; border:1px solid transparent; border-radius:8px; width:100%; padding:6px 8px; margin:6px -8px 16px; color:var(--ink); background:transparent; resize:vertical; min-height:54px; max-height:340px; overflow-y:auto; }
 .pb-titlearea:hover { border-color:var(--line); }
 .pb-titlearea:focus { outline:none; border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px var(--accent-soft); }
 .pb-seg { display:flex; gap:6px; flex-wrap:wrap; }

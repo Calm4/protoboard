@@ -52,12 +52,23 @@ export function EditableInput({ value, onCommit, autoSize = false, ...rest }) {
 }
 
 // Многострочное поле: Enter — перенос строки. Фиксируется по клику мимо, Esc — отмена.
-export function EditableTextarea({ value, onCommit, ...rest }) {
+// autoGrow — поле само подстраивает высоту под объём текста (не нужно тянуть вручную).
+export function EditableTextarea({ value, onCommit, autoGrow = false, ...rest }) {
   const { draft, setDraft, focused, cancelling, commit } = useDraft(value, onCommit);
+  const ref = useRef(null);
+
+  const grow = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  };
+  useEffect(() => { if (autoGrow) grow(); }, [draft, autoGrow]);
 
   return (
     <textarea
       {...rest}
+      ref={ref}
       value={draft}
       onFocus={() => { focused.current = true; }}
       onChange={(e) => setDraft(e.target.value)}

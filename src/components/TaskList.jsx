@@ -1,13 +1,15 @@
 import { useRef, useState } from "react";
-import { PRIORITIES, platLabel, PRIO_UI } from "../constants.js";
+import { PRIORITIES, PLATFORMS, PRIO_UI, PLAT_UI } from "../constants.js";
 import { hexToRgba } from "../lib/color.js";
+import StatusMenu from "./StatusMenu.jsx";
 
-// Табличный вид: задачи сгруппированы по статусам проекта. Показываем ВСЕ статусы,
-// даже пустые (чтобы видеть полный список колонок). Статус/приоритет меняются прямо
-// в строке, задачу можно перетащить в другую секцию.
-export default function TaskList({ tasks, statuses, onMoveTask, onSetPriority, onOpenTask }) {
+// Табличный вид: задачи сгруппированы по статусам проекта (показываем все, даже
+// пустые). Статус/приоритет/платформа меняются прямо в строке; задачу можно
+// перетащить в другую секцию. Статусы можно настраивать и отсюда (меню + добавить).
+export default function TaskList({ tasks, statuses, statusActions, onMoveTask, onSetPriority, onSetPlatform, onOpenTask }) {
   const dragId = useRef(null);
   const [dragOver, setDragOver] = useState(null);
+  const [menuFor, setMenuFor] = useState(null);
 
   const onDrop = (status) => {
     if (dragId.current) onMoveTask(dragId.current, status);
@@ -39,7 +41,23 @@ export default function TaskList({ tasks, statuses, onMoveTask, onSetPriority, o
               <span className="gdot" style={{ background: s.color }} />
               <span className="gname">{s.label}</span>
               <span className="gcount">{items.length}</span>
+              <button
+                className="pb-colmenu-btn"
+                title="Настройки статуса"
+                onClick={() => setMenuFor((m) => (m === s.id ? null : s.id))}
+              >⋯</button>
             </div>
+
+            {menuFor === s.id && (
+              <StatusMenu
+                status={s}
+                canDelete={statuses.length > 1}
+                statusActions={statusActions}
+                onClose={() => setMenuFor(null)}
+                className="inlist"
+              />
+            )}
+
             {items.map((t) => {
               const st = statuses.find((x) => x.id === t.status);
               return (
@@ -54,7 +72,16 @@ export default function TaskList({ tasks, statuses, onMoveTask, onSetPriority, o
                   <div className="pb-rowtitle">
                     <b>{t.title}</b>
                   </div>
-                  <span className="col-plat">{t.platform === "both" ? <span style={{ color: "var(--soft)", fontSize: 12.5 }}>Общая</span> : <span className={"pb-plat " + t.platform}>{platLabel(t.platform)}</span>}</span>
+                  <span className="col-plat" onClick={(e) => e.stopPropagation()}>
+                    <select
+                      className="pb-select"
+                      style={{ color: PLAT_UI[t.platform].fg, background: PLAT_UI[t.platform].bg, borderColor: PLAT_UI[t.platform].bd }}
+                      value={t.platform}
+                      onChange={(e) => onSetPlatform(t.id, e.target.value)}
+                    >
+                      {PLATFORMS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+                    </select>
+                  </span>
                   <span className="col-ver pb-ver">{t.version}</span>
                   <span className="col-prio" onClick={(e) => e.stopPropagation()}>
                     <select
@@ -83,6 +110,8 @@ export default function TaskList({ tasks, statuses, onMoveTask, onSetPriority, o
           </div>
         );
       })}
+
+      <button className="pb-addstatus" onClick={statusActions.add}>+ статус</button>
     </div>
   );
 }
