@@ -5,11 +5,12 @@ import StatusMenu from "./StatusMenu.jsx";
 // Доска: колонки = статусы проекта. Карточки перетаскиваются между колонками,
 // сами колонки можно добавлять, переименовывать, перекрашивать, удалять и менять
 // их порядок (перетаскиванием за шапку). Сверху и снизу — горизонтальный скролбар.
-export default function Board({ tasks, statuses, statusActions, onMoveTask, onOpenTask, onAddTask }) {
+export default function Board({ tasks, statuses, statusActions, onReorderTask, onOpenTask, onAddTask }) {
   const cardDrag = useRef(null); // id перетаскиваемой задачи
   const colDrag = useRef(null);  // id перетаскиваемой колонки
   const [dragOver, setDragOver] = useState(null);
   const [menuFor, setMenuFor] = useState(null); // у какой колонки открыто меню
+  const [hoverCard, setHoverCard] = useState(null); // карточка, перед которой вставим
 
   // Верхний скролбар: отдельная полоса над доской, ширина которой равна полной
   // ширине доски; прокрутка синхронизируется с самой доской в обе стороны.
@@ -36,9 +37,11 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onOp
     syncing.current = false;
   };
 
-  const handleDrop = (statusId) => {
+  // Бросок на колонку (пустое место) — задача уезжает в конец этой колонки;
+  // либо перестановка самих колонок, если тянем колонку.
+  const handleColDrop = (statusId) => {
     if (cardDrag.current) {
-      onMoveTask(cardDrag.current, statusId);
+      onReorderTask(cardDrag.current, statusId, null);
       cardDrag.current = null;
     } else if (colDrag.current && colDrag.current !== statusId) {
       const arr = [...statuses];
@@ -50,7 +53,19 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onOp
       colDrag.current = null;
     }
     setDragOver(null);
+    setHoverCard(null);
   };
+
+  // Бросок на карточку — вставить перетаскиваемую задачу ПЕРЕД ней.
+  const handleCardDrop = (card) => {
+    if (cardDrag.current && cardDrag.current !== card.id) {
+      onReorderTask(cardDrag.current, card.status, card.id);
+    }
+    cardDrag.current = null;
+    setDragOver(null);
+    setHoverCard(null);
+  };
+  const endDrag = () => { cardDrag.current = null; colDrag.current = null; setDragOver(null); setHoverCard(null); };
 
   return (
     <>
@@ -67,14 +82,14 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onOp
         onScroll={() => syncFrom(boardRef.current, topRef.current)}
       >
       {statuses.map((s) => {
-        const items = tasks.filter((t) => t.status === s.id);
+        const items = tasks.filter((t) => t.status === s.id).sort((a, b) => a.order - b.order);
         return (
           <div
             key={s.id}
             className={"pb-col" + (dragOver === s.id ? " over" : "")}
             onDragOver={(e) => { e.preventDefault(); setDragOver(s.id); }}
             onDragLeave={() => setDragOver((d) => (d === s.id ? null : d))}
-            onDrop={() => handleDrop(s.id)}
+            onDrop={() => handleColDrop(s.id)}
           >
             <div
               className="pb-colhead"
@@ -104,9 +119,17 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onOp
             {items.map((t) => (
               <div
                 key={t.id}
-                className="pb-card"
+                className={"pb-card" + (hoverCard === t.id ? " dropbefore" : "")}
                 draggable
                 onDragStart={() => { cardDrag.current = t.id; colDrag.current = null; }}
+                onDragEnd={endDrag}
+                onDragOver={(e) => {
+                  if (!cardDrag.current) return;
+                  e.preventDefault(); e.stopPropagation();
+                  setDragOver(s.id);
+                  if (hoverCard !== t.id) setHoverCard(t.id);
+                }}
+                onDrop={(e) => { e.stopPropagation(); handleCardDrop(t); }}
                 onClick={() => onOpenTask(t.id)}
               >
                 <h4>{t.title}</h4>
@@ -114,7 +137,7 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onOp
                   <span className={"pb-prio " + t.priority}>{PRIORITIES.find((p) => p.key === t.priority).label}</span>
                   {t.platform !== "both" && <span className={"pb-plat " + t.platform}>{platLabel(t.platform)}</span>}
                   <span style={{ flex: 1 }} />
-                  <span className="pb-ver">{t.version}</span>
+                  {t.version && <span className="pb-verchip">{t.version}</span>}
                   {t.shots.length > 0 && <span className="pb-shot">▦ {t.shots.length}</span>}
                 </div>
               </div>

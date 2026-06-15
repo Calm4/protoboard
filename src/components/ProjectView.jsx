@@ -8,7 +8,7 @@ import ColorSwatches from "./ColorSwatches.jsx";
 // Доска/Список, фильтр по платформе и сам контент (доска или таблица).
 export default function ProjectView({
   project, view, onSetView, platFilter, onSetPlatFilter,
-  visibleTasks, onBack, onSetName, onSetColor, onSetBuild, onAddTask, onMoveTask, onSetPriority, onSetPlatform, onOpenTask, statusActions,
+  visibleTasks, search, onSearch, onBack, onSetName, onSetColor, onSetBuild, onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform, onOpenTask, statusActions,
 }) {
   const statuses = project.statuses;
   const [palette, setPalette] = useState(false);
@@ -48,6 +48,16 @@ export default function ProjectView({
           />
         </div>
         <div className="pb-controls">
+          <div className="pb-search">
+            <span className="pb-search-ic">⌕</span>
+            <input
+              type="text"
+              placeholder="Поиск задач…"
+              value={search}
+              onChange={(e) => onSearch(e.target.value)}
+            />
+            {search && <button className="pb-search-x" title="Очистить" onClick={() => onSearch("")}>✕</button>}
+          </div>
           <div className="pb-switch">
             <button className={view === "board" ? "on" : ""} onClick={() => onSetView("board")}>Доска</button>
             <button className={view === "list" ? "on" : ""} onClick={() => onSetView("list")}>Список</button>
@@ -71,6 +81,7 @@ export default function ProjectView({
           statuses={statuses}
           statusActions={statusActions}
           onMoveTask={onMoveTask}
+          onReorderTask={onReorderTask}
           onOpenTask={onOpenTask}
           onAddTask={onAddTask}
         />
@@ -80,6 +91,7 @@ export default function ProjectView({
           statuses={statuses}
           statusActions={statusActions}
           onMoveTask={onMoveTask}
+          onReorderTask={onReorderTask}
           onSetPriority={onSetPriority}
           onSetPlatform={onSetPlatform}
           onOpenTask={onOpenTask}

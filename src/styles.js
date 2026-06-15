@@ -57,7 +57,20 @@ export const css = `
 .pb-switch { display:inline-flex; background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
 .pb-switch button { border:none; background:transparent; font-family:'Inter'; font-weight:600; font-size:13px; color:var(--soft); padding:7px 14px; border-radius:7px; cursor:pointer; }
 .pb-switch button.on { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(20,22,31,.10); }
-.pb-controls { display:flex; align-items:center; gap:10px; }
+.pb-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.pb-search { display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:0 8px; height:36px; }
+.pb-search:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.pb-search-ic { color:var(--soft); font-size:16px; line-height:1; }
+.pb-search input { border:none; outline:none; background:transparent; font-family:'Inter'; font-size:13.5px; color:var(--ink); width:160px; }
+.pb-search-x { border:none; background:transparent; color:var(--soft); cursor:pointer; font-size:12px; padding:2px 2px; }
+.pb-search-x:hover { color:var(--ink); }
+
+/* плашка версии (обводка, без выпадашки) */
+.pb-verchip { font-family:'Space Mono'; font-size:10.5px; color:var(--soft); border:1px solid var(--line); border-radius:5px; padding:1px 6px; white-space:nowrap; display:inline-block; }
+
+/* подсветка места вставки при перетаскивании */
+.pb-card.dropbefore { box-shadow:inset 0 3px 0 0 var(--accent); }
+.pb-row.dropbefore { box-shadow:inset 0 2px 0 0 var(--accent); }
 
 /* filter bar */
 .pb-filterbar { display:flex; align-items:center; gap:10px; margin:0 0 18px; }
@@ -93,7 +106,7 @@ export const css = `
 .pb-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(20,22,31,.09); }
 .pb-card:active { cursor:grabbing; }
 .pb-card h4 { font-size:13.5px; font-weight:600; margin:0 0 7px; line-height:1.35; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-.pb-cardfoot { display:flex; align-items:center; gap:7px; }
+.pb-cardfoot { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
 .pb-prio { font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; }
 .pb-prio.high { color:#B23636; background:#FBE7E7; }
 .pb-prio.med { color:#9A6711; background:#FBF1DC; }

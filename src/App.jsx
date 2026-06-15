@@ -19,7 +19,7 @@ export default function Protoboard() {
   const {
     projects, createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
-    addTask, moveTask, editTask, deleteTask, addShots, removeShot,
+    addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot,
   } = useProjects();
 
   // Состояние интерфейса.
@@ -29,6 +29,7 @@ export default function Protoboard() {
   const [showArchived, setShowArchived] = useState(false);
   const [newProj, setNewProj] = useState(null); // null = модалка закрыта; иначе { name, color }
   const [platFilter, setPlatFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   // Производные значения.
   const project = projects.find((p) => p.id === openId) || null;
@@ -38,10 +39,13 @@ export default function Protoboard() {
 
   const matchPlat = (t) =>
     platFilter === "all" || t.platform === platFilter || t.platform === "both";
-  const visibleTasks = project ? project.tasks.filter(matchPlat) : [];
+  const q = search.trim().toLowerCase();
+  const matchSearch = (t) =>
+    !q || (t.title || "").toLowerCase().includes(q) || (t.version || "").toLowerCase().includes(q);
+  const visibleTasks = project ? project.tasks.filter((t) => matchPlat(t) && matchSearch(t)) : [];
 
   // Действия, связывающие интерфейс с данными.
-  const openProject = (id) => { setOpenId(id); setView("board"); setPlatFilter("all"); };
+  const openProject = (id) => { setOpenId(id); setView("board"); setPlatFilter("all"); setSearch(""); };
   const handleAddTask = (status) => {
     const t = addTask(openId, status, project.build);
     setTaskId(t.id);
@@ -79,12 +83,15 @@ export default function Protoboard() {
             platFilter={platFilter}
             onSetPlatFilter={setPlatFilter}
             visibleTasks={visibleTasks}
+            search={search}
+            onSearch={setSearch}
             onBack={() => { setOpenId(null); setTaskId(null); }}
             onSetName={(name) => setName(openId, name)}
             onSetColor={(color) => setColor(openId, color)}
             onSetBuild={(build) => setBuild(openId, build)}
             onAddTask={handleAddTask}
             onMoveTask={(tid, status) => moveTask(openId, tid, status)}
+            onReorderTask={(dragId, status, beforeId) => reorderTask(openId, dragId, status, beforeId)}
             onSetPriority={(tid, priority) => editTask(openId, tid, { priority })}
             onSetPlatform={(tid, platform) => editTask(openId, tid, { platform })}
             onOpenTask={setTaskId}

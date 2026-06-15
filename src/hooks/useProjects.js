@@ -30,6 +30,7 @@ const rowToTask = (row) => ({
   status: row.status,
   platform: row.platform,
   version: row.version,
+  order: row.sort_order ?? 0, // порядок внутри колонки
   shots: [], // заполняется из таблицы attachments
 });
 const rowToProject = (row) => ({
@@ -84,7 +85,7 @@ export function useProjects() {
     (async () => {
       const [{ data: projRows }, { data: taskRows }, { data: attRows }] = await Promise.all([
         supabase.from("projects").select("*").order("created_at", { ascending: false }),
-        supabase.from("tasks").select("*").order("created_at", { ascending: true }),
+        supabase.from("tasks").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("attachments").select("*").order("created_at", { ascending: true }),
       ]);
       if (cancelled) return;
@@ -255,22 +256,51 @@ export function useProjects() {
   };
 
   // ── Задачи ───────────────────────────────────────────────────────────────
+  // Следующий порядковый номер (в конец) — берём максимум по проекту и +1.
+  const nextOrder = (proj) =>
+    (proj && proj.tasks.length ? Math.max(...proj.tasks.map((t) => t.order || 0)) : 0) + 1;
+
   const addTask = (pid, status = "todo", build = "") => {
     const id = newId();
+    const proj = projects.find((p) => p.id === pid);
+    const order = nextOrder(proj);
     const task = {
       id, title: "Новая задача", desc: "", notes: "",
-      priority: "med", status, platform: "both", version: build, shots: [],
+      priority: "med", status, platform: "both", version: build, order, shots: [],
     };
     patchProjectLocal(pid, (p) => ({ ...p, tasks: [...p.tasks, task] }));
     run(supabase.from("tasks").insert({
       id, project_id: pid, title: task.title, description: "", notes: "",
-      priority: "med", status, platform: "both", version: build,
+      priority: "med", status, platform: "both", version: build, sort_order: order,
     }));
     return task;
   };
+  // Смена статуса (выпадашка/кнопки) — задача уезжает в конец нового статуса.
   const moveTask = (pid, tid, status) => {
-    patchTaskLocal(pid, tid, (t) => ({ ...t, status }));
-    run(supabase.from("tasks").update({ status }).eq("id", tid));
+    const proj = projects.find((p) => p.id === pid);
+    const order = nextOrder(proj);
+    patchTaskLocal(pid, tid, (t) => ({ ...t, status, order }));
+    run(supabase.from("tasks").update({ status, sort_order: order }).eq("id", tid));
+  };
+  // Перестановка/перенос задачи с точной позицией: вставить перед beforeId
+  // (или в конец, если beforeId не задан). Дробный порядок = одно обновление.
+  const reorderTask = (pid, dragId, targetStatus, beforeId) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj) return;
+    const col = proj.tasks
+      .filter((t) => t.status === targetStatus && t.id !== dragId)
+      .sort((a, b) => a.order - b.order);
+    let idx = beforeId ? col.findIndex((t) => t.id === beforeId) : col.length;
+    if (idx < 0) idx = col.length;
+    const prev = col[idx - 1];
+    const next = col[idx];
+    let order;
+    if (!prev && !next) order = 1;
+    else if (!prev) order = next.order - 1;
+    else if (!next) order = prev.order + 1;
+    else order = (prev.order + next.order) / 2;
+    patchTaskLocal(pid, dragId, (t) => ({ ...t, status: targetStatus, order }));
+    run(supabase.from("tasks").update({ status: targetStatus, sort_order: order }).eq("id", dragId));
   };
   const deleteTask = (pid, tid) => {
     // Перед удалением задачи собираем пути её скриншотов, чтобы убрать сами файлы
@@ -336,7 +366,7 @@ export function useProjects() {
     projects,
     createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
-    addTask, moveTask, editTask, deleteTask,
+    addTask, moveTask, reorderTask, editTask, deleteTask,
     addShots, removeShot,
   };
 }
