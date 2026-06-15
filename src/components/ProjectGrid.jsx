@@ -20,7 +20,7 @@ export default function ProjectGrid({
           const pct = total ? Math.round((done / total) * 100) : 0;
           return (
             <div key={p.id} className="pb-proj" onClick={() => onOpen(p.id)}>
-              <span className="accentbar" />
+              <span className="accentbar" style={{ background: p.color }} />
               <button className="pb-arch-btn" onClick={(e) => { e.stopPropagation(); onArchive(p.id); }}>В архив</button>
               <h3>{p.name}</h3>
               <div className="pb-meta"><span className="pb-build">{p.build}</span> · {total} задач</div>
@@ -43,6 +43,7 @@ export default function ProjectGrid({
             <div className="pb-grid">
               {archived.map((p) => (
                 <div key={p.id} className="pb-proj" style={{ opacity: .68 }} onClick={() => onOpen(p.id)}>
+                  <span className="accentbar" style={{ background: p.color }} />
                   <button className="pb-arch-btn" onClick={(e) => { e.stopPropagation(); onUnarchive(p.id); }}>Вернуть</button>
                   <h3>{p.name}</h3>
                   <div className="pb-meta"><span className="pb-build">{p.build}</span> · {p.tasks.length} задач</div>

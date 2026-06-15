@@ -1,18 +1,37 @@
+import { useState } from "react";
 import Board from "./Board.jsx";
 import TaskList from "./TaskList.jsx";
 import { EditableInput } from "./Editable.jsx";
+import ColorSwatches from "./ColorSwatches.jsx";
 
 // Экран одного проекта: шапка с названием и редактируемым билдом, переключатель
 // Доска/Список, фильтр по платформе и сам контент (доска или таблица).
 export default function ProjectView({
   project, view, onSetView, platFilter, onSetPlatFilter,
-  visibleTasks, onBack, onSetName, onSetBuild, onAddTask, onMoveTask, onSetPriority, onOpenTask,
+  visibleTasks, onBack, onSetName, onSetColor, onSetBuild, onAddTask, onMoveTask, onSetPriority, onOpenTask,
 }) {
+  const [palette, setPalette] = useState(false);
   return (
     <>
       <div className="pb-back" onClick={onBack}>← Все проекты</div>
       <div className="pb-phead">
         <div className="pb-ptitle">
+          <div className="pb-colorwrap">
+            <button
+              className="pb-colordot"
+              style={{ background: project.color }}
+              title="Цвет проекта"
+              onClick={() => setPalette((o) => !o)}
+            />
+            {palette && (
+              <>
+                <div className="pb-colorscrim" onClick={() => setPalette(false)} />
+                <div className="pb-colorpop">
+                  <ColorSwatches value={project.color} onChange={(c) => { onSetColor(c); setPalette(false); }} />
+                </div>
+              </>
+            )}
+          </div>
           <EditableInput
             className="pb-nameedit"
             value={project.name}

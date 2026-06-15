@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase, isConfigured, SHOTS_BUCKET, shotUrl } from "../lib/supabase.js";
+import { DEFAULT_COLOR } from "../constants.js";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Единственное место, где живут данные. Теперь они в Supabase:
@@ -35,6 +36,7 @@ const rowToProject = (row) => ({
   name: row.name,
   build: row.build,
   archived: row.archived,
+  color: row.color || DEFAULT_COLOR,
   tasks: [],
 });
 const rowToShot = (row) => ({
@@ -132,6 +134,7 @@ export function useProjects() {
     } else if (eventType === "UPDATE") {
       patchProjectLocal(row.id, (p) => ({
         ...p, name: row.name, build: row.build, archived: row.archived,
+        color: row.color || DEFAULT_COLOR,
       }));
     }
   }
@@ -181,14 +184,18 @@ export function useProjects() {
     });
 
   // ── Проекты ────────────────────────────────────────────────────────────────
-  const createProject = (name) => {
+  const createProject = (name, color = DEFAULT_COLOR) => {
     const trimmed = (name || "").trim();
     if (!trimmed) return null;
     const id = newId();
-    const proj = { id, name: trimmed, build: "v0.1", archived: false, tasks: [] };
+    const proj = { id, name: trimmed, build: "v0.1", archived: false, color, tasks: [] };
     setProjects((ps) => [proj, ...ps]); // оптимистично
-    run(supabase.from("projects").insert({ id, name: trimmed, build: "v0.1", archived: false }));
+    run(supabase.from("projects").insert({ id, name: trimmed, build: "v0.1", archived: false, color }));
     return proj;
+  };
+  const setColor = (id, color) => {
+    patchProjectLocal(id, (p) => ({ ...p, color }));
+    run(supabase.from("projects").update({ color }).eq("id", id));
   };
   // Название и версия проекта фиксируются по Enter/клику мимо (см. Editable.jsx),
   // поэтому пишем сразу — это уже разовое сохранение, а не «на каждую букву».
@@ -286,7 +293,7 @@ export function useProjects() {
 
   return {
     projects,
-    createProject, setName, setArchived, setBuild,
+    createProject, setName, setColor, setArchived, setBuild,
     addTask, moveTask, editTask, deleteTask,
     addShots, removeShot,
   };

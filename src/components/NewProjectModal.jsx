@@ -1,6 +1,8 @@
-// Модальное окно создания проекта. Локально держит вводимое название;
-// «Создать» (или Enter) отдаёт его наверх, «Отмена» / клик по фону — закрывает.
-export default function NewProjectModal({ name, onChange, onCreate, onClose }) {
+import ColorSwatches from "./ColorSwatches.jsx";
+
+// Модальное окно создания проекта: название + цвет (полоска/кружок проекта).
+// proj — { name, color }; onChange отдаёт обновлённый объект наверх.
+export default function NewProjectModal({ proj, onChange, onCreate, onClose }) {
   return (
     <>
       <div className="pb-scrim" onClick={onClose} />
@@ -11,11 +13,15 @@ export default function NewProjectModal({ name, onChange, onCreate, onClose }) {
           <input
             className="pb-input"
             autoFocus
-            value={name}
+            value={proj.name}
             placeholder="Напр. Neon Dash"
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => onChange({ ...proj, name: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && onCreate()}
           />
+        </div>
+        <div className="pb-field">
+          <label>Цвет</label>
+          <ColorSwatches value={proj.color} onChange={(color) => onChange({ ...proj, color })} />
         </div>
         <div className="pb-modalfoot">
           <button className="pb-btn" onClick={onClose}>Отмена</button>

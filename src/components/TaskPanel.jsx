@@ -20,10 +20,11 @@ export default function TaskPanel({ task, onClose, onEdit, onMoveTask, onDelete,
       <div className="pb-scrim" onClick={onClose} />
       <div className="pb-panel">
         <button className="x" onClick={onClose}>✕</button>
-        <EditableInput
-          className="pb-titleinput"
+        <EditableTextarea
+          className="pb-titlearea"
           value={task.title}
-          title="Enter, чтобы сохранить"
+          rows={2}
+          placeholder="Что нужно сделать или что за баг…"
           onCommit={(v) => onEdit({ title: v })}
         />
         <div className="pb-field">
@@ -53,10 +54,6 @@ export default function TaskPanel({ task, onClose, onEdit, onMoveTask, onDelete,
         <div className="pb-field">
           <label>Версия (билд)</label>
           <EditableInput className="pb-input mono" value={task.version} placeholder="v0.4" onCommit={(v) => onEdit({ version: v })} />
-        </div>
-        <div className="pb-field">
-          <label>Описание</label>
-          <EditableTextarea className="pb-area" rows={3} value={task.desc} placeholder="Что нужно сделать или что за баг…" onCommit={(v) => onEdit({ desc: v })} />
         </div>
         <div className="pb-field">
           <label>Доп. условия / инфо</label>

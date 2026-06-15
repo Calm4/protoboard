@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { css } from "./styles.js";
+import { DEFAULT_COLOR } from "./constants.js";
 import { useProjects } from "./hooks/useProjects.js";
 import { useAuth } from "./hooks/useAuth.js";
 import ProjectGrid from "./components/ProjectGrid.jsx";
@@ -16,7 +17,7 @@ export default function Protoboard() {
 
   // Данные и операции (на шаге 3 этот хук переехал на Supabase).
   const {
-    projects, createProject, setName, setArchived, setBuild,
+    projects, createProject, setName, setColor, setArchived, setBuild,
     addTask, moveTask, editTask, deleteTask, addShots, removeShot,
   } = useProjects();
 
@@ -25,7 +26,7 @@ export default function Protoboard() {
   const [view, setView] = useState("board");        // "board" | "list"
   const [taskId, setTaskId] = useState(null);       // открытая задача (панель)
   const [showArchived, setShowArchived] = useState(false);
-  const [newProjName, setNewProjName] = useState(null); // null = модалка закрыта
+  const [newProj, setNewProj] = useState(null); // null = модалка закрыта; иначе { name, color }
   const [platFilter, setPlatFilter] = useState("all");
 
   // Производные значения.
@@ -45,8 +46,8 @@ export default function Protoboard() {
     setTaskId(t.id);
   };
   const handleCreateProject = () => {
-    const p = createProject(newProjName);
-    if (p) setNewProjName(null);
+    const p = createProject(newProj.name, newProj.color);
+    if (p) setNewProj(null);
   };
 
   // Пока проверяем сессию — ничего не мигаем (при выключенном входе сразу готово).
@@ -67,7 +68,7 @@ export default function Protoboard() {
             onOpen={openProject}
             onArchive={(id) => setArchived(id, true)}
             onUnarchive={(id) => setArchived(id, false)}
-            onNewProject={() => setNewProjName("")}
+            onNewProject={() => setNewProj({ name: "", color: DEFAULT_COLOR })}
           />
         ) : (
           <ProjectView
@@ -79,6 +80,7 @@ export default function Protoboard() {
             visibleTasks={visibleTasks}
             onBack={() => { setOpenId(null); setTaskId(null); }}
             onSetName={(name) => setName(openId, name)}
+            onSetColor={(color) => setColor(openId, color)}
             onSetBuild={(build) => setBuild(openId, build)}
             onAddTask={handleAddTask}
             onMoveTask={(tid, status) => moveTask(openId, tid, status)}
@@ -102,12 +104,12 @@ export default function Protoboard() {
       )}
 
       {/* Окно нового проекта */}
-      {newProjName !== null && (
+      {newProj !== null && (
         <NewProjectModal
-          name={newProjName}
-          onChange={setNewProjName}
+          proj={newProj}
+          onChange={setNewProj}
           onCreate={handleCreateProject}
-          onClose={() => setNewProjName(null)}
+          onClose={() => setNewProj(null)}
         />
       )}
     </div>
