@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase, isConfigured, SHOTS_BUCKET, shotUrl } from "../lib/supabase.js";
 import { compressImage } from "../lib/image.js";
 import { DEFAULT_COLOR, DEFAULT_STATUSES, PROJECT_COLORS } from "../constants.js";
@@ -51,7 +51,8 @@ const rowToShot = (row) => ({
 });
 
 // Перевод "удобных" полей задачи → колонки базы (для записи).
-const taskPatchToDb = (patch) => {
+// Включает order → sort_order, чтобы тем же мэппером откатывать перемещения.
+const taskFieldsToDb = (patch) => {
   const out = {};
   if ("title" in patch) out.title = patch.title;
   if ("desc" in patch) out.description = patch.desc;
@@ -60,8 +61,13 @@ const taskPatchToDb = (patch) => {
   if ("status" in patch) out.status = patch.status;
   if ("platform" in patch) out.platform = patch.platform;
   if ("version" in patch) out.version = patch.version;
+  if ("order" in patch) out.sort_order = patch.order;
   return out;
 };
+
+// Оставить из объекта только перечисленные ключи (для снимка «как было»).
+const pick = (obj, keys) =>
+  keys.reduce((o, k) => (obj && k in obj ? ((o[k] = obj[k]), o) : o), {});
 
 export function useProjects() {
   const [projects, setProjects] = useState([]);
@@ -193,6 +199,47 @@ export function useProjects() {
       if (error) console.error("[Protoboard] Ошибка записи в Supabase:", error.message);
     });
 
+  // ── Отмена действий (Ctrl+Z) ────────────────────────────────────────────────
+  // «Стопка» обратных операций: перед каждым изменением кладём сюда функцию,
+  // которая его откатывает (и в интерфейсе, и в базе). Ctrl+Z вызывает верхнюю.
+  // История — на этой вкладке (у каждого своя); чужие правки сюда не попадают.
+  // Запись: { label, undo, finalize? }. finalize вызывается, когда запись
+  // «уходит со дна» стопки (отменить её уже нельзя) — например, чтобы тогда, и
+  // только тогда, по-настоящему удалить файлы скриншотов из хранилища.
+  const undoRef = useRef([]);
+  const MAX_UNDO = 40;
+  const pushUndo = (entry) => {
+    undoRef.current.push(entry);
+    while (undoRef.current.length > MAX_UNDO) {
+      const dropped = undoRef.current.shift();
+      dropped.finalize?.();
+    }
+  };
+  // Откатить последнее действие. Возвращает его название (для уведомления) или null.
+  const undo = useCallback(async () => {
+    const entry = undoRef.current.pop();
+    if (!entry) return null;
+    await entry.undo();
+    return entry.label;
+  }, []);
+
+  // Откат набора полей задачи (общий для правки/перемещения/перестановки).
+  const undoTaskFields = (pid, tid, fields) => async () => {
+    patchTaskLocal(pid, tid, (t) => ({ ...t, ...fields }));
+    const dbPatch = taskFieldsToDb(fields);
+    if (Object.keys(dbPatch).length) await run(supabase.from("tasks").update(dbPatch).eq("id", tid));
+  };
+  // Откат полей проекта (имя/цвет/версия/архив — имена колонок совпадают).
+  const undoProjectFields = (pid, fields) => async () => {
+    patchProjectLocal(pid, (p) => ({ ...p, ...fields }));
+    await run(supabase.from("projects").update(fields).eq("id", pid));
+  };
+  // Откат списка статусов проекта.
+  const undoStatuses = (pid, statuses) => async () => {
+    patchProjectLocal(pid, (p) => ({ ...p, statuses }));
+    await run(supabase.from("projects").update({ statuses }).eq("id", pid));
+  };
+
   // ── Проекты ────────────────────────────────────────────────────────────────
   const createProject = (name, color = DEFAULT_COLOR) => {
     const trimmed = (name || "").trim();
@@ -202,9 +249,18 @@ export function useProjects() {
     const proj = { id, name: trimmed, build: "v0.1", archived: false, color, statuses, tasks: [] };
     setProjects((ps) => [proj, ...ps]); // оптимистично
     run(supabase.from("projects").insert({ id, name: trimmed, build: "v0.1", archived: false, color, statuses }));
+    pushUndo({
+      label: "создание проекта",
+      undo: async () => {
+        setProjects((ps) => ps.filter((p) => p.id !== id));
+        await run(supabase.from("projects").delete().eq("id", id));
+      },
+    });
     return proj;
   };
   const setColor = (id, color) => {
+    const old = projects.find((p) => p.id === id)?.color;
+    if (old !== undefined) pushUndo({ label: "цвет проекта", undo: undoProjectFields(id, { color: old }) });
     patchProjectLocal(id, (p) => ({ ...p, color }));
     run(supabase.from("projects").update({ color }).eq("id", id));
   };
@@ -220,24 +276,33 @@ export function useProjects() {
     if (!proj) return;
     const used = proj.statuses.map((s) => s.color);
     const color = PROJECT_COLORS.find((c) => !used.includes(c)) || PROJECT_COLORS[0];
+    pushUndo({ label: "добавление статуса", undo: undoStatuses(pid, proj.statuses) });
     writeStatuses(pid, [...proj.statuses, { id: newId(), label: "Новый статус", color }]);
   };
   const renameStatus = (pid, sid, label) => {
     const proj = projects.find((p) => p.id === pid);
     if (!proj) return;
+    pushUndo({ label: "переименование статуса", undo: undoStatuses(pid, proj.statuses) });
     writeStatuses(pid, proj.statuses.map((s) => (s.id === sid ? { ...s, label } : s)));
   };
   const recolorStatus = (pid, sid, color) => {
     const proj = projects.find((p) => p.id === pid);
     if (!proj) return;
+    pushUndo({ label: "цвет статуса", undo: undoStatuses(pid, proj.statuses) });
     writeStatuses(pid, proj.statuses.map((s) => (s.id === sid ? { ...s, color } : s)));
   };
-  const reorderStatuses = (pid, ordered) => writeStatuses(pid, ordered);
+  const reorderStatuses = (pid, ordered) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (proj) pushUndo({ label: "порядок статусов", undo: undoStatuses(pid, proj.statuses) });
+    writeStatuses(pid, ordered);
+  };
   const deleteStatus = (pid, sid) => {
     const proj = projects.find((p) => p.id === pid);
     if (!proj || proj.statuses.length <= 1) return; // последний статус не удаляем
+    const oldStatuses = proj.statuses;
     const remaining = proj.statuses.filter((s) => s.id !== sid);
     const target = remaining[0].id; // задачи удаляемой колонки уезжают в первую
+    const movedIds = proj.tasks.filter((t) => t.status === sid).map((t) => t.id);
     patchProjectLocal(pid, (p) => ({
       ...p,
       statuses: remaining,
@@ -245,18 +310,36 @@ export function useProjects() {
     }));
     run(supabase.from("projects").update({ statuses: remaining }).eq("id", pid));
     run(supabase.from("tasks").update({ status: target }).eq("project_id", pid).eq("status", sid));
+    pushUndo({
+      label: "удаление статуса",
+      undo: async () => {
+        // Возвращаем сам статус и уехавшие из него задачи обратно.
+        patchProjectLocal(pid, (p) => ({
+          ...p,
+          statuses: oldStatuses,
+          tasks: p.tasks.map((t) => (movedIds.includes(t.id) ? { ...t, status: sid } : t)),
+        }));
+        await run(supabase.from("projects").update({ statuses: oldStatuses }).eq("id", pid));
+        if (movedIds.length) await run(supabase.from("tasks").update({ status: sid }).in("id", movedIds));
+      },
+    });
   };
   // Название и версия проекта фиксируются по Enter/клику мимо (см. Editable.jsx),
   // поэтому пишем сразу — это уже разовое сохранение, а не «на каждую букву».
   const setName = (id, name) => {
+    const old = projects.find((p) => p.id === id)?.name;
+    if (old !== undefined) pushUndo({ label: "имя проекта", undo: undoProjectFields(id, { name: old }) });
     patchProjectLocal(id, (p) => ({ ...p, name }));
     run(supabase.from("projects").update({ name }).eq("id", id));
   };
   const setBuild = (id, build) => {
+    const old = projects.find((p) => p.id === id)?.build;
+    if (old !== undefined) pushUndo({ label: "версия проекта", undo: undoProjectFields(id, { build: old }) });
     patchProjectLocal(id, (p) => ({ ...p, build }));
     run(supabase.from("projects").update({ build }).eq("id", id));
   };
   const setArchived = (id, archived) => {
+    pushUndo({ label: archived ? "архивирование" : "возврат из архива", undo: undoProjectFields(id, { archived: !archived }) });
     patchProjectLocal(id, (p) => ({ ...p, archived }));
     run(supabase.from("projects").update({ archived }).eq("id", id));
   };
@@ -285,12 +368,21 @@ export function useProjects() {
       id, project_id: pid, title: task.title, description: "", notes: "",
       priority: "med", status, platform: "both", version: build, sort_order: order, num,
     }));
+    pushUndo({
+      label: "создание задачи",
+      undo: async () => {
+        patchProjectLocal(pid, (p) => ({ ...p, tasks: p.tasks.filter((t) => t.id !== id) }));
+        await run(supabase.from("tasks").delete().eq("id", id));
+      },
+    });
     return task;
   };
   // Смена статуса (выпадашка/кнопки) — задача уезжает в конец нового статуса.
   const moveTask = (pid, tid, status) => {
     const proj = projects.find((p) => p.id === pid);
     const order = nextOrder(proj);
+    const t = proj?.tasks.find((x) => x.id === tid);
+    if (t) pushUndo({ label: "перемещение задачи", undo: undoTaskFields(pid, tid, { status: t.status, order: t.order }) });
     patchTaskLocal(pid, tid, (t) => ({ ...t, status, order }));
     run(supabase.from("tasks").update({ status, sort_order: order }).eq("id", tid));
   };
@@ -311,26 +403,49 @@ export function useProjects() {
     else if (!prev) order = next.order - 1;
     else if (!next) order = prev.order + 1;
     else order = (prev.order + next.order) / 2;
+    const dragged = proj.tasks.find((t) => t.id === dragId);
+    if (dragged) pushUndo({ label: "перестановка задачи", undo: undoTaskFields(pid, dragId, { status: dragged.status, order: dragged.order }) });
     patchTaskLocal(pid, dragId, (t) => ({ ...t, status: targetStatus, order }));
     run(supabase.from("tasks").update({ status: targetStatus, sort_order: order }).eq("id", dragId));
   };
   const deleteTask = (pid, tid) => {
-    // Перед удалением задачи собираем пути её скриншотов, чтобы убрать сами файлы
-    // из Storage. Иначе запись в базе удалится (каскадом), а картинки осядут
-    // в хранилище мусором.
     const victim = projects.find((p) => p.id === pid)?.tasks.find((t) => t.id === tid);
-    const paths = (victim?.shots || []).map((s) => s.path).filter(Boolean);
+    if (!victim) return;
+    // Пути скриншотов: сами файлы из Storage НЕ трогаем сразу — вдруг будет Ctrl+Z.
+    // Удаляем строку задачи (вложения в базе уйдут каскадом), а файлы чистим позже,
+    // в finalize — когда отменить удаление уже нельзя (см. pushUndo выше).
+    const paths = (victim.shots || []).map((s) => s.path).filter(Boolean);
     patchProjectLocal(pid, (p) => ({ ...p, tasks: p.tasks.filter((t) => t.id !== tid) }));
-    if (paths.length) run(supabase.storage.from(SHOTS_BUCKET).remove(paths));
     run(supabase.from("tasks").delete().eq("id", tid));
+    pushUndo({
+      label: "удаление задачи",
+      undo: async () => {
+        // Возвращаем задачу как была (файлы скриншотов ещё в хранилище).
+        patchProjectLocal(pid, (p) =>
+          p.tasks.some((t) => t.id === tid) ? p : { ...p, tasks: [...p.tasks, victim] }
+        );
+        await run(supabase.from("tasks").insert({
+          id: victim.id, project_id: pid, title: victim.title, description: victim.desc || "",
+          notes: victim.notes || "", priority: victim.priority, status: victim.status,
+          platform: victim.platform, version: victim.version || "", sort_order: victim.order, num: victim.num,
+        }));
+        const rows = (victim.shots || [])
+          .filter((s) => s.path)
+          .map((s) => ({ id: s.id, task_id: tid, file_path: s.path, name: s.name }));
+        if (rows.length) await run(supabase.from("attachments").insert(rows));
+      },
+      finalize: () => { if (paths.length) run(supabase.storage.from(SHOTS_BUCKET).remove(paths)); },
+    });
   };
 
   // Правка полей задачи. Текстовые поля приходят сюда уже зафиксированными
   // (по Enter/клику мимо, см. Editable.jsx), кнопки приоритета/платформы — по клику.
   // В обоих случаях это разовое сохранение, поэтому пишем в базу сразу.
   const editTask = (pid, tid, patch) => {
+    const t = projects.find((p) => p.id === pid)?.tasks.find((x) => x.id === tid);
+    if (t) pushUndo({ label: "изменение задачи", undo: undoTaskFields(pid, tid, pick(t, Object.keys(patch))) });
     patchTaskLocal(pid, tid, (t) => ({ ...t, ...patch }));
-    const dbPatch = taskPatchToDb(patch);
+    const dbPatch = taskFieldsToDb(patch);
     if (Object.keys(dbPatch).length) run(supabase.from("tasks").update(dbPatch).eq("id", tid));
   };
 
@@ -381,5 +496,6 @@ export function useProjects() {
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask,
     addShots, removeShot,
+    undo,
   };
 }

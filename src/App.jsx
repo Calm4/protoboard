@@ -20,6 +20,7 @@ export default function Protoboard() {
     projects, loadState, reload, createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot,
+    undo,
   } = useProjects();
 
   // Состояние интерфейса.
@@ -30,6 +31,7 @@ export default function Protoboard() {
   const [newProj, setNewProj] = useState(null); // null = модалка закрыта; иначе { name, color }
   const [platFilter, setPlatFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [toast, setToast] = useState(null); // короткое уведомление внизу экрана
 
   // Производные значения.
   const project = projects.find((p) => p.id === openId) || null;
@@ -73,6 +75,31 @@ export default function Protoboard() {
     }
   }, []);
   useEffect(() => { openTaskFromHash(); }, [projects, openTaskFromHash]);
+
+  // Короткое уведомление, которое само исчезает.
+  const toastTimer = useRef(null);
+  const flashToast = useCallback((msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  }, []);
+
+  // Ctrl+Z / ⌘+Z — отмена последнего действия. Внутри текстовых полей не мешаем:
+  // там работает обычная отмена ввода браузера. Код клавиши (KeyZ) не зависит
+  // от раскладки — сработает и на русской.
+  useEffect(() => {
+    const onKey = async (e) => {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey || e.code !== "KeyZ") return;
+      const el = document.activeElement;
+      const editable = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      if (editable) return;
+      e.preventDefault();
+      const label = await undo();
+      flashToast(label ? `Отменено: ${label}` : "Нечего отменять");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, flashToast]);
   useEffect(() => {
     window.addEventListener("hashchange", openTaskFromHash);
     return () => window.removeEventListener("hashchange", openTaskFromHash);
@@ -164,6 +191,9 @@ export default function Protoboard() {
           onClose={() => setNewProj(null)}
         />
       )}
+
+      {/* Уведомление об отмене действия */}
+      {toast && <div className="pb-toast">{toast}</div>}
     </div>
   );
 }

@@ -221,6 +221,10 @@ export const css = `
 .pb-empty { text-align:center; color:var(--soft); padding:40px 16px; font-size:13.5px; }
 .pb-load { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:60vh; color:var(--soft); font-size:14px; text-align:center; }
 
+/* Всплывающее уведомление (отмена действий) */
+.pb-toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:70; background:var(--ink); color:#fff; font-family:'Inter'; font-weight:500; font-size:13.5px; padding:10px 16px; border-radius:10px; box-shadow:0 10px 30px rgba(15,17,26,.28); animation:pbtoast .16s ease; }
+@keyframes pbtoast { from { transform:translate(-50%,8px); opacity:0 } to { transform:translate(-50%,0); opacity:1 } }
+
 @media (max-width:720px){
   .pb-board{ grid-template-columns:1fr; }
   .pb-row{ grid-template-columns:1fr 130px; }
