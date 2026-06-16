@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { css } from "./styles.js";
-import { DEFAULT_COLOR } from "./constants.js";
+import { DEFAULT_COLOR, EMPTY_FILTERS } from "./constants.js";
 import { useProjects } from "./hooks/useProjects.js";
 import { useAuth } from "./hooks/useAuth.js";
 import ProjectGrid from "./components/ProjectGrid.jsx";
@@ -29,7 +29,7 @@ export default function Protoboard() {
   const [taskId, setTaskId] = useState(null);       // открытая задача (панель)
   const [showArchived, setShowArchived] = useState(false);
   const [newProj, setNewProj] = useState(null); // null = модалка закрыта; иначе { name, color }
-  const [platFilter, setPlatFilter] = useState("all");
+  const [filters, setFilters] = useState(EMPTY_FILTERS); // см. constants.EMPTY_FILTERS
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState(null); // короткое уведомление внизу экрана
 
@@ -39,15 +39,35 @@ export default function Protoboard() {
   const active = projects.filter((p) => !p.archived);
   const archived = projects.filter((p) => p.archived);
 
-  const matchPlat = (t) =>
-    platFilter === "all" || t.platform === platFilter || t.platform === "both";
   const q = search.trim().toLowerCase();
   const matchSearch = (t) =>
     !q || (t.title || "").toLowerCase().includes(q) || (t.version || "").toLowerCase().includes(q);
-  const visibleTasks = project ? project.tasks.filter((t) => matchPlat(t) && matchSearch(t)) : [];
+  // Все условия фильтров. Пустые («all»/"") ничего не сужают.
+  const matchFilters = (t) => {
+    const f = filters;
+    if (f.platform !== "all" && t.platform !== f.platform && t.platform !== "both") return false;
+    if (f.priority !== "all" && t.priority !== f.priority) return false;
+    if (f.status !== "all" && t.status !== f.status) return false;
+    if (f.version !== "all") {
+      if (f.version === "__none__") { if (t.version) return false; }
+      else if (t.version !== f.version) return false;
+    }
+    if (f.num.trim() !== "" && String(t.num ?? "") !== f.num.trim()) return false;
+    if (f.dateFrom || f.dateTo) {
+      if (!t.created) return false;
+      const c = new Date(t.created).getTime();
+      if (f.dateFrom && c < new Date(f.dateFrom + "T00:00:00").getTime()) return false;
+      if (f.dateTo && c > new Date(f.dateTo + "T23:59:59.999").getTime()) return false;
+    }
+    return true;
+  };
+  const visibleTasks = project ? project.tasks.filter((t) => matchFilters(t) && matchSearch(t)) : [];
+
+  const setFilter = (key, val) => setFilters((f) => ({ ...f, [key]: val }));
+  const resetFilters = () => setFilters(EMPTY_FILTERS);
 
   // Действия, связывающие интерфейс с данными.
-  const openProject = (id) => { setOpenId(id); setView("board"); setPlatFilter("all"); setSearch(""); };
+  const openProject = (id) => { setOpenId(id); setView("board"); resetFilters(); setSearch(""); };
   const handleAddTask = (status) => {
     const t = addTask(openId, status, project.build);
     setTaskId(t.id);
@@ -67,7 +87,7 @@ export default function Protoboard() {
     if (proj) {
       setOpenId(proj.id);
       setView("board");
-      setPlatFilter("all");
+      setFilters(EMPTY_FILTERS);
       setSearch("");
       setTaskId(m[1]);
       // «гасим» якорь, чтобы живые обновления не открывали задачу повторно
@@ -142,8 +162,9 @@ export default function Protoboard() {
             project={project}
             view={view}
             onSetView={setView}
-            platFilter={platFilter}
-            onSetPlatFilter={setPlatFilter}
+            filters={filters}
+            onSetFilter={setFilter}
+            onResetFilters={resetFilters}
             visibleTasks={visibleTasks}
             search={search}
             onSearch={setSearch}

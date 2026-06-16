@@ -86,6 +86,23 @@ export const css = `
 .pb-chip { border:1px solid var(--line); background:var(--surface); color:var(--soft); font-size:12.5px; font-weight:600; padding:5px 12px; border-radius:99px; cursor:pointer; font-family:'Inter'; }
 .pb-chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
 
+/* Панель фильтров (кнопка «Фильтры» + всплывающая панель) */
+.pb-filterwrap { position:relative; display:inline-block; }
+.pb-filterpop { position:absolute; top:42px; left:0; z-index:31; width:300px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:0 12px 30px rgba(20,22,31,.16); display:flex; flex-direction:column; gap:12px; }
+.pb-filterpop .pb-chips { flex-wrap:wrap; }
+.pb-frow { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.pb-frow.col { flex-direction:column; align-items:stretch; gap:8px; }
+.pb-frow .lbl { font-family:'Space Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--soft); }
+.pb-frow .pb-select { min-width:150px; }
+.pb-fnum { font-family:'Inter'; font-size:12.5px; border:1px solid var(--line); border-radius:8px; padding:5px 8px; background:var(--surface); color:var(--ink); width:96px; outline:none; }
+.pb-fnum:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.pb-daterow { display:flex; align-items:center; gap:8px; }
+.pb-daterow .pb-select { flex:1; min-width:0; }
+.pb-daterow .dash { color:var(--soft); }
+.pb-ffoot { display:flex; justify-content:space-between; gap:8px; border-top:1px solid var(--line); padding-top:12px; }
+.pb-fcount { font-family:'Space Mono'; font-size:11px; color:var(--soft); }
+.pb-btn:disabled { opacity:.45; cursor:default; box-shadow:none; transform:none; }
+
 /* board */
 .pb-board-topscroll { overflow-x:auto; overflow-y:hidden; }
 .pb-board-topscroll > div { height:1px; }
@@ -134,13 +151,22 @@ export const css = `
 .pb-row:hover { background:var(--surface2); }
 .pb-row.header { background:var(--surface2); font-family:'Space Mono'; font-size:11px; letter-spacing:.04em; color:var(--soft); text-transform:uppercase; cursor:default; }
 .pb-row.header:hover { background:var(--surface2); }
-.pb-row.group { display:flex; align-items:center; gap:8px; background:var(--surface2); cursor:default; padding:9px 16px; }
+.pb-row.header .pb-sortable { cursor:pointer; user-select:none; white-space:nowrap; transition:color .12s ease; }
+.pb-row.header .pb-sortable:hover { color:var(--ink); }
+.pb-row.header .pb-sortable.active { color:var(--accent); }
+.pb-row.group { display:flex; align-items:center; gap:8px; background:var(--surface2); cursor:default; padding:11px 16px; border-bottom:1px solid var(--line); }
 .pb-row.group:hover { background:var(--surface2); }
-.pb-row.group .gdot { width:8px; height:8px; border-radius:99px; }
-.pb-row.group .gname { font-family:'Space Grotesk'; font-weight:600; font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pb-row.group .gdot { width:9px; height:9px; border-radius:99px; }
+.pb-row.group .gname { font-family:'Space Grotesk'; font-weight:700; font-size:13px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pb-row.group .gcount { font-family:'Space Mono'; font-size:11px; color:var(--soft); }
 .pb-row.group .pb-colmenu-btn { flex:0 0 auto; }
 .pb-listgroup { position:relative; transition:background .12s; }
+/* Явный «зазор» между группами, чтобы было видно, где одна кончается и начинается другая */
+.pb-listgroup + .pb-listgroup { border-top:5px solid var(--bg); }
+/* Мягкая заливка всей строки по цвету её статуса (--tint задаётся в TaskList) */
+.pb-listgroup .pb-row:not(.group) { background:var(--tint, transparent); }
+.pb-listgroup .pb-row:not(.group):hover { background:var(--surface2); }
+.pb-listgroup.over .pb-row:not(.group) { background:transparent; }
 .pb-colmenu.inlist { left:auto; right:10px; width:240px; top:38px; }
 .pb-addstatus { display:block; width:100%; border:none; border-top:1px solid var(--line); background:transparent; color:var(--soft); padding:12px; cursor:pointer; font-family:'Inter'; font-size:13px; font-weight:600; }
 .pb-addstatus:hover { color:var(--accent); }

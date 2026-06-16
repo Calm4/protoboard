@@ -27,6 +27,13 @@ export const PLATFORMS = [
 export const platLabel = (k) => PLATFORMS.find((p) => p.key === k).label;
 export const prioLabel = (k) => PRIORITIES.find((p) => p.key === k).label;
 
+// Пустой набор фильтров задач (значения «по умолчанию» = ничего не отфильтровано).
+// platform/priority/status/version: "all"; num: точный номер #N; dateFrom/dateTo: YYYY-MM-DD.
+export const EMPTY_FILTERS = {
+  platform: "all", priority: "all", status: "all", version: "all",
+  num: "", dateFrom: "", dateTo: "",
+};
+
 // Палитра цветов проекта (полоска слева / кружок у названия). 18 оттенков.
 export const PROJECT_COLORS = [
   "#5B4BE0", "#7C5CFC", "#6D4AFF", "#9B51E0", "#D6457A", "#E0556E",

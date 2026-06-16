@@ -32,6 +32,7 @@ const rowToTask = (row) => ({
   version: row.version,
   order: row.sort_order ?? 0, // порядок внутри колонки
   num: row.num ?? null,       // номер-«id для багов» в рамках проекта (#1, #2, …)
+  created: row.created_at ?? null, // когда создана — для фильтра по дате
   shots: [], // заполняется из таблицы attachments
 });
 const rowToProject = (row) => ({
@@ -361,7 +362,8 @@ export function useProjects() {
     const num = nextNum(proj);
     const task = {
       id, title: "Новая задача", desc: "", notes: "",
-      priority: "med", status, platform: "both", version: build, order, num, shots: [],
+      priority: "med", status, platform: "both", version: build, order, num,
+      created: new Date().toISOString(), shots: [],
     };
     patchProjectLocal(pid, (p) => ({ ...p, tasks: [...p.tasks, task] }));
     run(supabase.from("tasks").insert({
