@@ -31,6 +31,7 @@ const rowToTask = (row) => ({
   platform: row.platform,
   version: row.version,
   order: row.sort_order ?? 0, // порядок внутри колонки
+  num: row.num ?? null,       // номер-«id для багов» в рамках проекта (#1, #2, …)
   shots: [], // заполняется из таблицы attachments
 });
 const rowToProject = (row) => ({
@@ -82,13 +83,17 @@ export function useProjects() {
   const loadAll = useCallback(async () => {
     if (!isConfigured) { setLoadState("ready"); return; }
     setLoadState("loading");
+    // Таймаут на попытку: если соединение «висит» и не отвечает, обрываем через
+    // 8 с, чтобы повторить, а не залипнуть на «Загрузка…» навсегда.
+    const withTimeout = (promise, ms) =>
+      Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const [p, t, a] = await Promise.all([
+        const [p, t, a] = await withTimeout(Promise.all([
           supabase.from("projects").select("*").order("created_at", { ascending: false }),
           supabase.from("tasks").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
           supabase.from("attachments").select("*").order("created_at", { ascending: true }),
-        ]);
+        ]), 8000);
         if (p.error || t.error || a.error) throw (p.error || t.error || a.error);
 
         // Собираем вложенную структуру: проект → его задачи → их скриншоты.
@@ -261,18 +266,24 @@ export function useProjects() {
   const nextOrder = (proj) =>
     (proj && proj.tasks.length ? Math.max(...proj.tasks.map((t) => t.order || 0)) : 0) + 1;
 
+  // Следующий номер задачи (id для багов): максимум по проекту + 1.
+  // Удалили верхний номер → новая задача переиспользует его (это ожидаемо).
+  const nextNum = (proj) =>
+    (proj && proj.tasks.length ? Math.max(0, ...proj.tasks.map((t) => t.num || 0)) : 0) + 1;
+
   const addTask = (pid, status = "todo", build = "") => {
     const id = newId();
     const proj = projects.find((p) => p.id === pid);
     const order = nextOrder(proj);
+    const num = nextNum(proj);
     const task = {
       id, title: "Новая задача", desc: "", notes: "",
-      priority: "med", status, platform: "both", version: build, order, shots: [],
+      priority: "med", status, platform: "both", version: build, order, num, shots: [],
     };
     patchProjectLocal(pid, (p) => ({ ...p, tasks: [...p.tasks, task] }));
     run(supabase.from("tasks").insert({
       id, project_id: pid, title: task.title, description: "", notes: "",
-      priority: "med", status, platform: "both", version: build, sort_order: order,
+      priority: "med", status, platform: "both", version: build, sort_order: order, num,
     }));
     return task;
   };

@@ -134,6 +134,7 @@ export default function Board({ tasks, statuses, statusActions, onReorderTask, o
               >
                 <h4>{t.title}</h4>
                 <div className="pb-cardfoot">
+                  {t.num != null && <span className="pb-num">#{t.num}</span>}
                   <span className={"pb-prio " + t.priority}>{PRIORITIES.find((p) => p.key === t.priority).label}</span>
                   {t.platform !== "both" && <span className={"pb-plat " + t.platform}>{platLabel(t.platform)}</span>}
                   <span style={{ flex: 1 }} />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { css } from "./styles.js";
 import { DEFAULT_COLOR } from "./constants.js";
 import { useProjects } from "./hooks/useProjects.js";
@@ -54,6 +54,29 @@ export default function Protoboard() {
     const p = createProject(newProj.name, newProj.color);
     if (p) setNewProj(null);
   };
+
+  // Открытие задачи по ссылке (#task=<uuid>) — у любого, кто перейдёт по ней.
+  const projectsRef = useRef(projects);
+  projectsRef.current = projects;
+  const openTaskFromHash = useCallback(() => {
+    const m = window.location.hash.match(/task=([0-9a-fA-F-]+)/);
+    if (!m) return;
+    const proj = projectsRef.current.find((p) => p.tasks.some((t) => t.id === m[1]));
+    if (proj) {
+      setOpenId(proj.id);
+      setView("board");
+      setPlatFilter("all");
+      setSearch("");
+      setTaskId(m[1]);
+      // «гасим» якорь, чтобы живые обновления не открывали задачу повторно
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, []);
+  useEffect(() => { openTaskFromHash(); }, [projects, openTaskFromHash]);
+  useEffect(() => {
+    window.addEventListener("hashchange", openTaskFromHash);
+    return () => window.removeEventListener("hashchange", openTaskFromHash);
+  }, [openTaskFromHash]);
 
   // Пока проверяем сессию — ничего не мигаем (при выключенном входе сразу готово).
   if (!ready) return null;

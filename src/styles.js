@@ -68,6 +68,13 @@ export const css = `
 /* плашка версии (обводка, без выпадашки) */
 .pb-verchip { font-family:'Space Mono'; font-size:10.5px; color:var(--soft); border:1px solid var(--line); border-radius:5px; padding:1px 6px; white-space:nowrap; display:inline-block; }
 
+/* номер задачи (id для багов) + ссылка */
+.pb-num { font-family:'Space Mono'; font-size:10.5px; font-weight:700; color:var(--accent); background:var(--accent-soft); border-radius:5px; padding:1px 6px; white-space:nowrap; display:inline-block; }
+.pb-rowtitle .pb-num { margin-right:6px; }
+.pb-taskid { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.pb-copylink { border:1px solid var(--line); background:var(--surface); color:var(--soft); font-family:'Inter'; font-weight:600; font-size:12px; padding:5px 10px; border-radius:8px; cursor:pointer; }
+.pb-copylink:hover { color:var(--accent); border-color:var(--accent); }
+
 /* подсветка места вставки при перетаскивании */
 .pb-card.dropbefore { box-shadow:inset 0 3px 0 0 var(--accent); }
 .pb-row.dropbefore { box-shadow:inset 0 2px 0 0 var(--accent); }

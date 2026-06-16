@@ -8,6 +8,17 @@ import { downloadImage } from "../lib/image.js";
 export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask, onDelete, onAddShots, onRemoveShot }) {
   const fileRef = useRef(null);
   const [zoom, setZoom] = useState(null); // ссылка на скриншот, открытый на весь экран
+  const [copied, setCopied] = useState(false);
+
+  // Ссылка на конкретную задачу: открывается у любого, кто по ней перейдёт.
+  const copyLink = () => {
+    const url = window.location.origin + window.location.pathname + "#task=" + task.id;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); });
+    } else {
+      window.prompt("Скопируй ссылку:", url);
+    }
+  };
 
   // Отдаём выбранные файлы наверх — загрузку в хранилище берёт на себя хук данных.
   const handleFiles = (e) => {
@@ -21,6 +32,12 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
       <div className="pb-scrim" onClick={onClose} />
       <div className="pb-panel">
         <button className="x" onClick={onClose}>✕</button>
+        <div className="pb-taskid">
+          {task.num != null && <span className="pb-num">#{task.num}</span>}
+          <button className="pb-copylink" onClick={copyLink} title="Ссылка на этот баг">
+            {copied ? "Ссылка скопирована ✓" : "🔗 Скопировать ссылку"}
+          </button>
+        </div>
         <EditableTextarea
           className="pb-titlearea"
           value={task.title}
