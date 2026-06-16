@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase, isConfigured, SHOTS_BUCKET, shotUrl } from "../lib/supabase.js";
 import { compressImage } from "../lib/image.js";
 import { DEFAULT_COLOR, DEFAULT_STATUSES, PROJECT_COLORS } from "../constants.js";
@@ -64,9 +64,9 @@ const taskPatchToDb = (patch) => {
 
 export function useProjects() {
   const [projects, setProjects] = useState([]);
+  // Состояние первой загрузки: "loading" | "ready" | "error".
+  const [loadState, setLoadState] = useState(isConfigured ? "loading" : "ready");
 
-  // Отложенная запись текста в базу: пока человек печатает, не дёргаем сервер
-  // на каждую букву — ждём паузу ~450 мс и пишем накопленное.
   // ── Локальные помощники: точечно меняем состояние по id ────────────────────
   const patchProjectLocal = (id, fn) =>
     setProjects((ps) => ps.map((p) => (p.id === id ? fn(p) : p)));
@@ -76,54 +76,55 @@ export function useProjects() {
       tasks: p.tasks.map((t) => (t.id === tid ? fn(t) : t)),
     }));
 
-  // ── Первая загрузка + подписка на живые обновления ─────────────────────────
+  // ── Первая загрузка с авто-повтором ────────────────────────────────────────
+  // Один сетевой обрыв при открытии больше не оставляет пустой экран: пробуем
+  // до 3 раз с паузой, и только потом показываем состояние "ошибка" с кнопкой.
+  const loadAll = useCallback(async () => {
+    if (!isConfigured) { setLoadState("ready"); return; }
+    setLoadState("loading");
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const [p, t, a] = await Promise.all([
+          supabase.from("projects").select("*").order("created_at", { ascending: false }),
+          supabase.from("tasks").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
+          supabase.from("attachments").select("*").order("created_at", { ascending: true }),
+        ]);
+        if (p.error || t.error || a.error) throw (p.error || t.error || a.error);
+
+        // Собираем вложенную структуру: проект → его задачи → их скриншоты.
+        const tasksByProject = {};
+        (t.data || []).forEach((r) => { (tasksByProject[r.project_id] ||= []).push(rowToTask(r)); });
+        const shotsByTask = {};
+        (a.data || []).forEach((r) => { (shotsByTask[r.task_id] ||= []).push(rowToShot(r)); });
+        const assembled = (p.data || []).map((row) => {
+          const proj = rowToProject(row);
+          proj.tasks = (tasksByProject[row.id] || []).map((tk) => ({ ...tk, shots: shotsByTask[tk.id] || [] }));
+          return proj;
+        });
+        setProjects(assembled);
+        setLoadState("ready");
+        return;
+      } catch (e) {
+        console.warn(`[Protoboard] не удалось загрузить данные (попытка ${attempt}/3):`, e?.message || e);
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 1200 * attempt));
+      }
+    }
+    setLoadState("error");
+  }, []);
+
+  // Запускаем загрузку и подписку на живые обновления.
   useEffect(() => {
-    if (!isConfigured) return; // ключей нет — показываем пустой экран
-
-    let cancelled = false;
-
-    (async () => {
-      const [{ data: projRows }, { data: taskRows }, { data: attRows }] = await Promise.all([
-        supabase.from("projects").select("*").order("created_at", { ascending: false }),
-        supabase.from("tasks").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
-        supabase.from("attachments").select("*").order("created_at", { ascending: true }),
-      ]);
-      if (cancelled) return;
-
-      // Собираем вложенную структуру: проект → его задачи → их скриншоты.
-      const tasksByProject = {};
-      (taskRows || []).forEach((r) => {
-        (tasksByProject[r.project_id] ||= []).push(rowToTask(r));
-      });
-      const shotsByTask = {};
-      (attRows || []).forEach((r) => {
-        (shotsByTask[r.task_id] ||= []).push(rowToShot(r));
-      });
-      const assembled = (projRows || []).map((p) => {
-        const proj = rowToProject(p);
-        proj.tasks = (tasksByProject[p.id] || []).map((t) => ({
-          ...t,
-          shots: shotsByTask[t.id] || [],
-        }));
-        return proj;
-      });
-      setProjects(assembled);
-    })();
-
-    // Realtime: слушаем изменения во всех трёх таблицах и применяем по id.
+    loadAll();
+    if (!isConfigured) return;
     const channel = supabase
       .channel("protoboard")
       .on("postgres_changes", { event: "*", schema: "public", table: "projects" }, onProjectChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, onTaskChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "attachments" }, onAttachmentChange)
       .subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadAll]);
 
   // ── Обработчики Realtime (идемпотентны: повторное применение безопасно) ─────
   function onProjectChange(payload) {
@@ -364,6 +365,7 @@ export function useProjects() {
 
   return {
     projects,
+    loadState, reload: loadAll,
     createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask,

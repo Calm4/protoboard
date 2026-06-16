@@ -17,7 +17,7 @@ export default function Protoboard() {
 
   // Данные и операции (на шаге 3 этот хук переехал на Supabase).
   const {
-    projects, createProject, setName, setColor, setArchived, setBuild,
+    projects, loadState, reload, createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot,
   } = useProjects();
@@ -59,6 +59,18 @@ export default function Protoboard() {
   if (!ready) return null;
   // Когда вход включат: не вошёл — показываем экран входа вместо приложения.
   if (authRequired && !user) return <LoginScreen onSignIn={signInWithEmail} />;
+
+  // Экран первой загрузки / ошибки связи с базой (вместо пугающего пустого списка).
+  const shell = (content) => (
+    <div className="pb"><style>{css}</style><div className="pb-wrap">{content}</div></div>
+  );
+  if (loadState === "loading") return shell(<div className="pb-load">Загрузка…</div>);
+  if (loadState === "error") return shell(
+    <div className="pb-load">
+      <div>Не удалось связаться с базой. Похоже, на секунду пропала сеть.</div>
+      <button className="pb-btn primary" onClick={reload}>Повторить</button>
+    </div>
+  );
 
   return (
     <div className="pb">

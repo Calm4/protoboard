@@ -212,6 +212,7 @@ export const css = `
 .pb-modalfoot { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
 
 .pb-empty { text-align:center; color:var(--soft); padding:40px 16px; font-size:13.5px; }
+.pb-load { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:60vh; color:var(--soft); font-size:14px; text-align:center; }
 
 @media (max-width:720px){
   .pb-board{ grid-template-columns:1fr; }
