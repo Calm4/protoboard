@@ -31,7 +31,7 @@ export const prioLabel = (k) => PRIORITIES.find((p) => p.key === k).label;
 // platform/priority/status/version: "all"; num: точный номер #N; dateFrom/dateTo: YYYY-MM-DD.
 export const EMPTY_FILTERS = {
   platform: "all", priority: "all", status: "all", version: "all",
-  num: "", dateFrom: "", dateTo: "", tags: [],
+  num: "", dateFrom: "", dateTo: "", tags: [], showClosed: false,
 };
 
 // Палитра цветов проекта (полоска слева / кружок у названия). 18 оттенков.

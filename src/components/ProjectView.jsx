@@ -4,19 +4,23 @@ import TaskList from "./TaskList.jsx";
 import StatsView from "./StatsView.jsx";
 import { EditableInput } from "./Editable.jsx";
 import ColorSwatches from "./ColorSwatches.jsx";
-import { PRIORITIES, GLOBAL_TAGS } from "../constants.js";
+import { PRIORITIES, GLOBAL_TAGS, GRADIENTS } from "../constants.js";
 
 export default function ProjectView({
   project, view, onSetView, filters, onSetFilter, onResetFilters,
   visibleTasks, search, onSearch, onBack, onSetName, onSetColor, onSetBuild,
-  onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform,
-  onOpenTask, statusActions, onRemoveProjectTag, onDeleteTask,
+  onSetGradient, onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform,
+  onToggleClosed, onOpenTask, statusActions, onRemoveProjectTag, onDeleteTask,
 }) {
   const statuses = project.statuses;
   const [palette, setPalette] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
+  const [bannerPickerPos, setBannerPickerPos] = useState({ top: 0, right: 0 });
+
+  const closedCount = project.tasks.filter((t) => t.closed).length;
 
   const f = filters;
   const versions = [...new Set(project.tasks.map((t) => t.version).filter(Boolean))]
@@ -69,6 +73,46 @@ export default function ProjectView({
   return (
     <>
       <div className="pb-back" onClick={onBack}>← Все проекты</div>
+
+      {/* Баннер-градиент вверху проекта (как у Slack) */}
+      <div
+        className={"pb-proj-banner" + (project.gradient ? "" : " empty")}
+        style={project.gradient ? { background: project.gradient } : {}}
+      >
+        <button
+          className="pb-banner-edit-btn"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setBannerPickerPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+            setBannerPickerOpen((o) => !o);
+          }}
+        >
+          🎨 {project.gradient ? "Изменить фон" : "Добавить фон"}
+        </button>
+      </div>
+      {bannerPickerOpen && (
+        <>
+          <div className="pb-colorscrim" onClick={() => setBannerPickerOpen(false)} />
+          <div
+            className="pb-gradpop"
+            style={{ top: bannerPickerPos.top, right: bannerPickerPos.right }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {GRADIENTS.map((g) => (
+              <button
+                key={g.value}
+                className={"pb-gradswatch" + (project.gradient === g.value ? " on" : "")}
+                title={g.label}
+                style={g.value ? { background: g.value } : undefined}
+                onClick={() => { onSetGradient(g.value); setBannerPickerOpen(false); }}
+              >
+                {!g.value && "✕"}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
       <div className="pb-phead">
         <div className="pb-ptitle">
           <div className="pb-colorwrap">
@@ -192,6 +236,14 @@ export default function ProjectView({
               </>
             )}
           </div>
+          {closedCount > 0 && (
+            <button
+              className={"pb-btn sm" + (filters.showClosed ? "" : " ghost")}
+              onClick={() => onSetFilter("showClosed", !filters.showClosed)}
+            >
+              ✓ {filters.showClosed ? "Скрыть выполненные" : `Выполненные (${closedCount})`}
+            </button>
+          )}
           {activeCount > 0 && <span className="pb-fcount">Показано: {visibleTasks.length}</span>}
         </div>
       )}
@@ -210,6 +262,7 @@ export default function ProjectView({
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
+          onToggleClosed={onToggleClosed}
         />
       ) : (
         <TaskList
@@ -224,6 +277,7 @@ export default function ProjectView({
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
+          onToggleClosed={onToggleClosed}
         />
       )}
 

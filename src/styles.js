@@ -368,6 +368,26 @@ export const css = `
 .pb-modal .pb-input { width:100%; margin-bottom:16px; }
 .pb-modal-foot { display:flex; justify-content:flex-end; gap:10px; }
 
+/* ── Кнопка «выполнено» (Asana-style checkbox) ───────────────────────────── */
+.pb-closebtn { width:17px; height:17px; border-radius:50%; border:2px solid var(--line); background:transparent; cursor:pointer; flex-shrink:0; padding:0; position:relative; transition:border-color .12s, background .12s; margin-top:1px; }
+.pb-closebtn:hover { border-color:var(--done); }
+.pb-closebtn.done { background:var(--done); border-color:var(--done); }
+.pb-closebtn.done::after { content:"✓"; color:#fff; font-size:10px; font-weight:700; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
+.pb-card-titlerow { display:flex; align-items:flex-start; gap:8px; }
+.pb-card-titlerow h4 { flex:1; margin:0 0 7px; }
+.pb-card.closed { opacity:.55; }
+.pb-card.closed .pb-card-titlerow h4 { text-decoration:line-through; color:var(--soft); }
+.pb-row.closed { opacity:.55; }
+.pb-row.closed .pb-rowtitle b { text-decoration:line-through; color:var(--soft); }
+
+/* ── Баннер проекта (Slack-style gradient header) ────────────────────────── */
+.pb-proj-banner { height:88px; border-radius:12px; margin-bottom:14px; display:flex; align-items:flex-end; justify-content:flex-end; padding:10px 12px; position:relative; overflow:hidden; }
+.pb-proj-banner.empty { border:1.5px dashed var(--line); background:transparent; }
+.pb-banner-edit-btn { border:none; background:rgba(0,0,0,.28); color:#fff; font-family:'Inter'; font-weight:600; font-size:12px; padding:5px 11px; border-radius:7px; cursor:pointer; backdrop-filter:blur(4px); transition:background .12s; }
+.pb-banner-edit-btn:hover { background:rgba(0,0,0,.46); }
+.pb-proj-banner.empty .pb-banner-edit-btn { background:var(--surface2); color:var(--soft); }
+.pb-proj-banner.empty .pb-banner-edit-btn:hover { color:var(--ink); background:var(--line); }
+
 /* ── Статистика ──────────────────────────────────────────────────────────── */
 .pb-stats{ padding:24px 0 40px; }
 .pb-stat-cards{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px; }

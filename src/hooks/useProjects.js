@@ -36,6 +36,7 @@ const rowToTask = (data) => ({
   dueDate: data.dueDate || "",
   assignee: data.assignee || "",
   completedAt: data.completedAt || null,
+  closed: data.closed || false,
   shots: [],
   shotsLoaded: false,
   activity: [],
@@ -69,6 +70,7 @@ const taskFieldsToDb = (patch) => {
   if ("dueDate" in patch) out.dueDate = patch.dueDate;
   if ("assignee" in patch) out.assignee = patch.assignee;
   if ("completedAt" in patch) out.completedAt = patch.completedAt;
+  if ("closed" in patch) out.closed = patch.closed;
   return out;
 };
 

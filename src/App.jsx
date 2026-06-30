@@ -56,6 +56,7 @@ export default function Protoboard() {
   // Все условия фильтров. Пустые («all»/"") ничего не сужают.
   const matchFilters = (t) => {
     const f = filters;
+    if (!f.showClosed && t.closed) return false;
     if (f.platform !== "all" && t.platform !== f.platform && t.platform !== "both") return false;
     if (f.priority !== "all" && t.priority !== f.priority) return false;
     if (f.status !== "all" && t.status !== f.status) return false;
@@ -244,11 +245,16 @@ export default function Protoboard() {
             onSetName={(name) => setName(openId, name)}
             onSetColor={(color) => setColor(openId, color)}
             onSetBuild={(build) => setBuild(openId, build)}
+            onSetGradient={(grad) => setGradient(openId, grad)}
             onAddTask={handleAddTask}
             onMoveTask={(tid, status) => moveTask(openId, tid, status)}
             onReorderTask={(dragId, status, beforeId) => reorderTask(openId, dragId, status, beforeId)}
             onSetPriority={(tid, priority) => editTask(openId, tid, { priority })}
             onSetPlatform={(tid, platform) => editTask(openId, tid, { platform })}
+            onToggleClosed={(tid) => {
+              const t = project?.tasks.find((x) => x.id === tid);
+              if (t) editTask(openId, tid, { closed: !t.closed });
+            }}
             onOpenTask={(tid) => {
               setTaskId(tid);
               if (tid && openId) { loadShots(openId, tid); loadActivity(openId, tid); }

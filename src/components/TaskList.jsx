@@ -8,7 +8,7 @@ import StatusMenu from "./StatusMenu.jsx";
 // полю; повторный клик по той же колонке меняет порядок групп (▲/▼).
 // Перетаскивание задач работает только в группировке по статусу (там это перенос между
 // колонками); в остальных группировках строки не таскаются — это режим просмотра.
-export default function TaskList({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onSetPriority, onSetPlatform, onOpenTask, selectMode, selectedIds = new Set(), onToggleSelect }) {
+export default function TaskList({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onSetPriority, onSetPlatform, onOpenTask, selectMode, selectedIds = new Set(), onToggleSelect, onToggleClosed }) {
   const dragId = useRef(null);
   const [dragOver, setDragOver] = useState(null);
   const [dropRow, setDropRow] = useState(null);
@@ -96,7 +96,7 @@ export default function TaskList({ tasks, statuses, statusActions, onMoveTask, o
             return (
               <div
                 key={t.id}
-                className={"pb-row" + (dropRow === t.id ? " dropbefore" : "") + (selectedIds.has(t.id) ? " selected" : "")}
+                className={"pb-row" + (dropRow === t.id ? " dropbefore" : "") + (selectedIds.has(t.id) ? " selected" : "") + (t.closed ? " closed" : "")}
                 style={{ "--tint": st ? hexToRgba(st.color, 0.1) : "transparent" }}
                 draggable={byStatus && !selectMode}
                 onDragStart={byStatus && !selectMode ? () => { dragId.current = t.id; } : undefined}
@@ -106,6 +106,13 @@ export default function TaskList({ tasks, statuses, statusActions, onMoveTask, o
                 onClick={() => selectMode ? onToggleSelect(t.id) : onOpenTask(t.id)}
               >
                 {selectMode && <span className={"pb-check" + (selectedIds.has(t.id) ? " on" : "")} />}
+                {!selectMode && onToggleClosed && (
+                  <button
+                    className={"pb-closebtn" + (t.closed ? " done" : "")}
+                    title={t.closed ? "Открыть задачу" : "Отметить выполненной"}
+                    onClick={(e) => { e.stopPropagation(); onToggleClosed(t.id); }}
+                  />
+                )}
                 <div className="pb-rowtitle">
                   {t.num != null && <span className="pb-num">#{t.num}</span>}
                   <b>{t.title}</b>

@@ -14,7 +14,7 @@ const fmtDate = (s) => {
   return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 };
 
-export default function Board({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onOpenTask, onAddTask, selectMode, selectedIds = new Set(), onToggleSelect }) {
+export default function Board({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onOpenTask, onAddTask, selectMode, selectedIds = new Set(), onToggleSelect, onToggleClosed }) {
   const cardDrag = useRef(null);
   const colDrag = useRef(null);
   const [dragOver, setDragOver] = useState(null);
@@ -103,7 +103,7 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onRe
                 return (
                   <div
                     key={t.id}
-                    className={"pb-card" + (hoverCard === t.id ? " dropbefore" : "") + (selected ? " selected" : "")}
+                    className={"pb-card" + (hoverCard === t.id ? " dropbefore" : "") + (selected ? " selected" : "") + (t.closed ? " closed" : "")}
                     draggable={!selectMode}
                     onDragStart={() => { if (!selectMode) { cardDrag.current = t.id; colDrag.current = null; } }}
                     onDragEnd={endDrag}
@@ -119,7 +119,16 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onRe
                     {selectMode && (
                       <span className={"pb-check" + (selected ? " on" : "")} />
                     )}
-                    <h4>{t.title}</h4>
+                    <div className="pb-card-titlerow">
+                      {!selectMode && onToggleClosed && (
+                        <button
+                          className={"pb-closebtn" + (t.closed ? " done" : "")}
+                          title={t.closed ? "Открыть задачу" : "Отметить выполненной"}
+                          onClick={(e) => { e.stopPropagation(); onToggleClosed(t.id); }}
+                        />
+                      )}
+                      <h4>{t.title}</h4>
+                    </div>
                     {(t.tags || []).length > 0 && (
                       <div className="pb-cardtags">
                         {t.tags.slice(0, 3).map((tag) => <span key={tag} className="pb-tag-sm">{tag}</span>)}

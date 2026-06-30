@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { GRADIENTS } from "../constants.js";
 
 const isHoldStatus = (label) => {
   const l = (label || "").toLowerCase();
@@ -18,8 +17,6 @@ export default function ProjectGrid({
 }) {
   const [gSearch, setGSearch] = useState("");
   const [gOpen, setGOpen] = useState(false);
-  const [gradientFor, setGradientFor] = useState(null);
-  const [gradPopPos, setGradPopPos] = useState({ top: 0, right: 0 });
 
   const globalStats = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -54,9 +51,6 @@ export default function ProjectGrid({
     setGSearch(""); setGOpen(false);
     onOpenTask(pid, tid);
   };
-
-  const closeGradientPicker = () => setGradientFor(null);
-  const gradPickerProj = gradientFor ? active.find((p) => p.id === gradientFor) ?? null : null;
 
   return (
     <>
@@ -137,20 +131,6 @@ export default function ProjectGrid({
             >
               {!hasGrad && <span className="accentbar" style={{ background: p.color }} />}
               <button className="pb-arch-btn" onClick={(e) => { e.stopPropagation(); onArchive(p.id); }}>В архив</button>
-              <button
-                className={"pb-grad-btn" + (gradientFor === p.id ? " open" : "")}
-                title="Фон карточки"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (gradientFor === p.id) {
-                    setGradientFor(null);
-                  } else {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setGradPopPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-                    setGradientFor(p.id);
-                  }
-                }}
-              >🎨</button>
               <h3>{p.name}</h3>
               <div className="pb-meta">
                 <span className="pb-build">{p.build}</span> · {total} задач
@@ -163,29 +143,6 @@ export default function ProjectGrid({
         {active.length === 0 && <div className="pb-empty">Пока нет активных проектов. Создай первый прототип.</div>}
       </div>
 
-      {/* Пикер градиента — рендерится ВНЕ карточек, иначе overflow:hidden обрезает */}
-      {gradPickerProj && (
-        <>
-          <div className="pb-fullscrim" onClick={closeGradientPicker} />
-          <div
-            className="pb-gradpop"
-            style={{ top: gradPopPos.top, right: gradPopPos.right }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {GRADIENTS.map((g) => (
-              <button
-                key={g.value}
-                className={"pb-gradswatch" + (gradPickerProj.gradient === g.value ? " on" : "")}
-                title={g.label}
-                style={g.value ? { background: g.value } : undefined}
-                onClick={() => { onSetGradient(gradPickerProj.id, g.value); closeGradientPicker(); }}
-              >
-                {!g.value && "✕"}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
 
       {/* Архив */}
       {archived.length > 0 && (
