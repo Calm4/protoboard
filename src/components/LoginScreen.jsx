@@ -1,52 +1,54 @@
 import { useState } from "react";
 
-// Экран входа. Готов к работе, но показывается ТОЛЬКО когда AUTH_REQUIRED = true
-// (см. src/hooks/useAuth.js). Сейчас вход выключен, поэтому этот экран не виден.
-// Вход — по ссылке из письма (magic link), без паролей.
 export default function LoginScreen({ onSignIn }) {
-  const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const submit = async () => {
+  const handleSignIn = async () => {
+    setLoading(true);
     setError("");
-    const { error } = await onSignIn(email);
-    if (error) setError(error.message);
-    else setSent(true);
+    try {
+      await onSignIn();
+    } catch (e) {
+      if (e.code !== "auth/popup-closed-by-user") {
+        setError("Не удалось войти. Попробуй ещё раз.");
+      }
+    }
+    setLoading(false);
   };
 
   return (
     <div className="pb">
       <style>{`
-        .pb-login { max-width:380px; margin:14vh auto 0; padding:28px 26px; background:var(--surface);
-          border:1px solid var(--line); border-radius:16px; box-shadow:0 18px 50px rgba(20,22,31,.10); text-align:center; }
-        .pb-login .pb-logo { display:block; margin-bottom:6px; }
-        .pb-login p { color:var(--soft); font-size:13.5px; margin:0 0 20px; }
-        .pb-login .pb-input { margin-bottom:12px; text-align:left; }
-        .pb-login .pb-btn { width:100%; justify-content:center; }
-        .pb-login .ok { color:var(--done); font-size:14px; font-weight:600; }
-        .pb-login .err { color:#B23636; font-size:12.5px; margin-top:10px; }
+        .pb-login-wrap { display:flex; align-items:center; justify-content:center; min-height:100dvh; }
+        .pb-login { width:340px; padding:36px 32px 32px; background:var(--surface);
+          border:1px solid var(--line); border-radius:20px;
+          box-shadow:0 24px 60px rgba(20,22,31,.12); text-align:center; }
+        .pb-login .pb-logo { font-size:22px; letter-spacing:-.5px; display:block; margin-bottom:8px; }
+        .pb-login .pb-login-sub { color:var(--soft); font-size:13.5px; margin:0 0 28px; line-height:1.5; }
+        .pb-btn-google { display:flex; align-items:center; justify-content:center; gap:10px;
+          width:100%; padding:11px 18px; border-radius:10px; font-size:14.5px; font-weight:500;
+          border:1.5px solid var(--line); background:var(--surface); color:var(--text);
+          cursor:pointer; transition:background .15s, box-shadow .15s; }
+        .pb-btn-google:hover:not(:disabled) { background:var(--hover); box-shadow:0 2px 8px rgba(0,0,0,.07); }
+        .pb-btn-google:disabled { opacity:.6; cursor:default; }
+        .pb-login .err { color:#B23636; font-size:12.5px; margin-top:14px; }
       `}</style>
-      <div className="pb-login">
-        <span className="pb-logo">Proto<b>board</b></span>
-        {sent ? (
-          <p className="ok">Готово! Проверь почту — там ссылка для входа.</p>
-        ) : (
-          <>
-            <p>Введи рабочий e-mail — пришлём ссылку для входа.</p>
-            <input
-              className="pb-input"
-              type="email"
-              autoFocus
-              value={email}
-              placeholder="you@studio.com"
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
-            />
-            <button className="pb-btn primary" onClick={submit}>Получить ссылку</button>
-            {error && <div className="err">{error}</div>}
-          </>
-        )}
+      <div className="pb-login-wrap">
+        <div className="pb-login">
+          <span className="pb-logo">Proto<b>board</b></span>
+          <p className="pb-login-sub">Войди через Google, чтобы<br />получить доступ к трекеру.</p>
+          <button className="pb-btn-google" onClick={handleSignIn} disabled={loading}>
+            <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M47.532 24.552c0-1.636-.147-3.2-.415-4.698H24.48v8.883h12.955c-.558 3.01-2.25 5.562-4.797 7.27v6.044h7.764c4.54-4.18 7.13-10.337 7.13-17.499z" fill="#4285F4"/>
+              <path d="M24.48 48c6.504 0 11.956-2.155 15.942-5.85l-7.764-6.043c-2.154 1.444-4.908 2.295-8.178 2.295-6.29 0-11.615-4.25-13.515-9.962H2.94v6.24C6.907 42.772 15.084 48 24.48 48z" fill="#34A853"/>
+              <path d="M10.965 28.44A14.44 14.44 0 0 1 10.2 24c0-1.544.267-3.044.765-4.44v-6.24H2.94A23.945 23.945 0 0 0 .48 24c0 3.864.927 7.52 2.46 10.68l8.025-6.24z" fill="#FBBC05"/>
+              <path d="M24.48 9.598c3.545 0 6.727 1.218 9.232 3.613l6.92-6.92C36.43 2.395 30.978 0 24.48 0 15.084 0 6.907 5.228 2.94 13.32l8.025 6.24C12.865 13.848 18.19 9.598 24.48 9.598z" fill="#EA4335"/>
+            </svg>
+            {loading ? "Входим…" : "Войти через Google"}
+          </button>
+          {error && <div className="err">{error}</div>}
+        </div>
       </div>
     </div>
   );

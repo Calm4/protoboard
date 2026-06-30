@@ -14,7 +14,7 @@ import LoginScreen from "./components/LoginScreen.jsx";
 // какой фильтр), а все данные и операции над ними берёт из useProjects().
 export default function Protoboard() {
   // «Ворота» входа. Сейчас вход выключен (см. useAuth.js) — пропускают всех.
-  const { ready, user, authRequired, signInWithEmail } = useAuth();
+  const { ready, user, signInWithGoogle, signOut } = useAuth();
 
   // Данные и операции (на шаге 3 этот хук переехал на Supabase).
   const {
@@ -189,8 +189,7 @@ export default function Protoboard() {
 
   // Пока проверяем сессию — ничего не мигаем (при выключенном входе сразу готово).
   if (!ready) return null;
-  // Когда вход включат: не вошёл — показываем экран входа вместо приложения.
-  if (authRequired && !user) return <LoginScreen onSignIn={signInWithEmail} />;
+  if (!user) return <LoginScreen onSignIn={signInWithGoogle} />;
 
   // Экран первой загрузки / ошибки связи с базой (вместо пугающего пустого списка).
   const shell = (content) => (
@@ -229,6 +228,8 @@ export default function Protoboard() {
             onToggleDark={toggleDark}
             onSetGradient={(pid, grad) => setGradient(pid, grad)}
             onDeleteProject={(pid) => setDeletingProjId(pid)}
+            user={user}
+            onSignOut={signOut}
           />
         ) : (
           <ProjectView

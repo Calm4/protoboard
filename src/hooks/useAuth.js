@@ -1,15 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut as fbSignOut,
+} from "firebase/auth";
+import { auth } from "../lib/firebase.js";
 
-// Задел под вход в систему. Сейчас вход выключен (AUTH_REQUIRED = false).
-// Когда понадобится — подключим Firebase Auth.
-export const AUTH_REQUIRED = false;
+const provider = new GoogleAuthProvider();
 
 export function useAuth() {
-  const [user] = useState(null);
-  const ready = true; // Вход выключен — сразу готовы.
+  // undefined = ещё проверяем сессию, null = не вошёл, объект = вошёл
+  const [user, setUser] = useState(undefined);
 
-  const signInWithEmail = (_email) => {};
-  const signOut = () => {};
+  useEffect(() => {
+    if (!auth) { setUser(null); return; }
+    return onAuthStateChanged(auth, (u) => setUser(u ?? null));
+  }, []);
 
-  return { user, ready, authRequired: AUTH_REQUIRED, signInWithEmail, signOut };
+  const signInWithGoogle = () => signInWithPopup(auth, provider);
+  const signOut = () => fbSignOut(auth);
+
+  return {
+    user: user ?? null,
+    ready: user !== undefined,
+    signInWithGoogle,
+    signOut,
+  };
 }

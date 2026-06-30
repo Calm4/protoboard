@@ -1,4 +1,54 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+
+function UserBadge({ user, onSignOut }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{ display:"flex", alignItems:"center", gap:7, padding:"4px 8px 4px 4px",
+          borderRadius:8, border:"1.5px solid var(--line)", background:"var(--surface)",
+          cursor:"pointer", color:"var(--text)", fontSize:13.5, fontWeight:500 }}
+        title={user.email}
+      >
+        {user.photoURL
+          ? <img src={user.photoURL} width={24} height={24}
+              style={{ borderRadius:"50%", display:"block" }} referrerPolicy="no-referrer" />
+          : <span style={{ width:24, height:24, borderRadius:"50%", background:"var(--accent)",
+              color:"#fff", fontSize:12, fontWeight:700, display:"flex",
+              alignItems:"center", justifyContent:"center" }}>
+              {(user.displayName || user.email || "?")[0].toUpperCase()}
+            </span>
+        }
+        {user.displayName?.split(" ")[0] || user.email?.split("@")[0]}
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)}
+            style={{ position:"fixed", inset:0, zIndex:99 }} />
+          <div style={{ position:"absolute", right:0, top:"calc(100% + 6px)", zIndex:100,
+            background:"var(--surface)", border:"1px solid var(--line)", borderRadius:10,
+            boxShadow:"0 8px 24px rgba(0,0,0,.12)", minWidth:180, padding:"6px 0" }}>
+            <div style={{ padding:"8px 14px 6px", fontSize:12, color:"var(--soft)",
+              borderBottom:"1px solid var(--line)", marginBottom:4 }}>
+              {user.email}
+            </div>
+            <button onClick={() => { setOpen(false); onSignOut(); }}
+              style={{ display:"block", width:"100%", textAlign:"left",
+                padding:"8px 14px", background:"none", border:"none",
+                cursor:"pointer", fontSize:13.5, color:"var(--text)" }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "var(--hover)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+            >
+              Выйти
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 const isHoldStatus = (label) => {
   const l = (label || "").toLowerCase();
@@ -14,6 +64,7 @@ export default function ProjectGrid({
   active, archived, allProjects, showArchived, onToggleArchived,
   onOpen, onArchive, onUnarchive, onNewProject, onOpenTask,
   isDark, onToggleDark, onSetGradient, onDeleteProject,
+  user, onSignOut,
 }) {
   const [gSearch, setGSearch] = useState("");
   const [gOpen, setGOpen] = useState(false);
@@ -62,6 +113,7 @@ export default function ProjectGrid({
           <button className="pb-darktoggle" title="Сменить тему" onClick={onToggleDark}>
             {isDark ? "☀" : "☾"}
           </button>
+          {user && <UserBadge user={user} onSignOut={onSignOut} />}
           <button className="pb-btn primary" onClick={onNewProject}>+ Новый проект</button>
         </div>
       </div>
