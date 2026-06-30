@@ -24,3 +24,4 @@ if (!isConfigured) {
 export const app = isConfigured ? initializeApp(firebaseConfig) : null;
 export const db = isConfigured ? getFirestore(app) : null;
 export const auth = isConfigured ? getAuth(app) : null;
+

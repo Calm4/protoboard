@@ -64,7 +64,7 @@ export default function ProjectGrid({
   active, archived, allProjects, showArchived, onToggleArchived,
   onOpen, onArchive, onUnarchive, onNewProject, onOpenTask,
   isDark, onToggleDark, onSetGradient, onDeleteProject,
-  user, onSignOut,
+  user, onSignOut, isAdmin,
 }) {
   const [gSearch, setGSearch] = useState("");
   const [gOpen, setGOpen] = useState(false);
@@ -218,7 +218,7 @@ export default function ProjectGrid({
                   {!hasGrad && <span className="accentbar" style={{ background: p.color }} />}
                   <div className="pb-arch-actions">
                     <button className="pb-arch-btn static" onClick={(e) => { e.stopPropagation(); onUnarchive(p.id); }}>Вернуть</button>
-                    <button className="pb-arch-del" onClick={(e) => { e.stopPropagation(); onDeleteProject(p.id); }}>Удалить</button>
+                    {isAdmin && <button className="pb-arch-del" onClick={(e) => { e.stopPropagation(); onDeleteProject(p.id); }}>Удалить</button>}
                   </div>
                   <h3>{p.name}</h3>
                   <div className="pb-meta"><span className="pb-build">{p.build}</span> · {p.tasks.length} задач</div>

@@ -77,7 +77,7 @@ const taskFieldsToDb = (patch) => {
 const pick = (obj, keys) =>
   keys.reduce((o, k) => (obj && k in obj ? ((o[k] = obj[k]), o) : o), {});
 
-export function useProjects() {
+export function useProjects(enabled = true) {
   const [projects, setProjects] = useState([]);
   const [loadState, setLoadState] = useState(isConfigured ? "loading" : "ready");
   // Увеличение этого счётчика пересоздаёт подписки (retry).
@@ -105,6 +105,7 @@ export function useProjects() {
   // onSnapshot заменяет и начальную загрузку, и Supabase Realtime одновременно:
   // первый вызов коллбэка приносит все данные, последующие — только изменения.
   useEffect(() => {
+    if (!enabled) return;
     if (!isConfigured) { setLoadState("ready"); return; }
 
     const projectsMap = new Map();
@@ -171,7 +172,7 @@ export function useProjects() {
     );
 
     return () => { unsubProjects(); unsubTasks(); };
-  }, [retryKey]);
+  }, [retryKey, enabled]);
 
   // Пишем в Firestore и логируем ошибку, не роняя интерфейс.
   const run = (promise) =>

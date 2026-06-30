@@ -14,7 +14,8 @@ import LoginScreen from "./components/LoginScreen.jsx";
 // какой фильтр), а все данные и операции над ними берёт из useProjects().
 export default function Protoboard() {
   // «Ворота» входа. Сейчас вход выключен (см. useAuth.js) — пропускают всех.
-  const { ready, user, signInWithGoogle, signOut } = useAuth();
+  const { ready, user, role, signInWithGoogle, signOut } = useAuth();
+  const isAdmin = role === "admin";
 
   // Данные и операции (на шаге 3 этот хук переехал на Supabase).
   const {
@@ -24,7 +25,7 @@ export default function Protoboard() {
     addTag, removeTag, removeProjectTag, loadActivity,
     deleteProject, setGradient,
     undo,
-  } = useProjects();
+  } = useProjects(!!user);
 
   // Состояние интерфейса.
   const [openId, setOpenId] = useState(null);
@@ -230,6 +231,7 @@ export default function Protoboard() {
             onDeleteProject={(pid) => setDeletingProjId(pid)}
             user={user}
             onSignOut={signOut}
+            isAdmin={isAdmin}
           />
         ) : (
           <ProjectView
