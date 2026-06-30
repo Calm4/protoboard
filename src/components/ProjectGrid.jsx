@@ -154,9 +154,16 @@ export default function ProjectGrid({
           </div>
           {showArchived && (
             <div className="pb-grid">
-              {archived.map((p) => (
-                <div key={p.id} className="pb-proj" style={{ opacity: .68 }} onClick={() => onOpen(p.id)}>
-                  <span className="accentbar" style={{ background: p.color }} />
+              {archived.map((p) => {
+                const hasGrad = !!p.gradient;
+                return (
+                <div
+                  key={p.id}
+                  className={"pb-proj" + (hasGrad ? " has-gradient" : "")}
+                  style={{ opacity: .68, ...(hasGrad ? { background: p.gradient } : {}) }}
+                  onClick={() => onOpen(p.id)}
+                >
+                  {!hasGrad && <span className="accentbar" style={{ background: p.color }} />}
                   <div className="pb-arch-actions">
                     <button className="pb-arch-btn static" onClick={(e) => { e.stopPropagation(); onUnarchive(p.id); }}>Вернуть</button>
                     <button className="pb-arch-del" onClick={(e) => { e.stopPropagation(); onDeleteProject(p.id); }}>Удалить</button>
@@ -164,7 +171,8 @@ export default function ProjectGrid({
                   <h3>{p.name}</h3>
                   <div className="pb-meta"><span className="pb-build">{p.build}</span> · {p.tasks.length} задач</div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
