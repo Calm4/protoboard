@@ -55,6 +55,22 @@ export const PLAT_UI = {
   android: { fg: "#1C7A4A", bg: "#E1F2E8", bd: "#C5E6D2" },
 };
 
+// Градиенты для фона карточки проекта на главной.
+export const GRADIENTS = [
+  { label: "Нет", value: "" },
+  { label: "Фиолет", value: "linear-gradient(135deg,#667eea,#764ba2)" },
+  { label: "Закат", value: "linear-gradient(135deg,#fa709a,#fee140)" },
+  { label: "Океан", value: "linear-gradient(135deg,#4facfe,#00f2fe)" },
+  { label: "Ночь", value: "linear-gradient(135deg,#1a1a2e,#0f3460)" },
+  { label: "Лес", value: "linear-gradient(135deg,#134e5e,#71b280)" },
+  { label: "Оранж", value: "linear-gradient(135deg,#f7971e,#ffd200)" },
+  { label: "Малина", value: "linear-gradient(135deg,#ee0979,#ff6a00)" },
+  { label: "Кобальт", value: "linear-gradient(135deg,#1e3c72,#2a5298)" },
+  { label: "Вишня", value: "linear-gradient(135deg,#c31432,#240b36)" },
+  { label: "Медь", value: "linear-gradient(135deg,#c79081,#dfa579)" },
+  { label: "Мята", value: "linear-gradient(135deg,#0bd2a4,#22577a)" },
+];
+
 // Глобальные теги — видны во всех проектах, нельзя удалить.
 export const GLOBAL_TAGS = [
   "Баг", "Задача", "UI", "Баланс", "Краш",

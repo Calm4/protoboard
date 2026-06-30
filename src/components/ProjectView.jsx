@@ -10,8 +10,7 @@ export default function ProjectView({
   project, view, onSetView, filters, onSetFilter, onResetFilters,
   visibleTasks, search, onSearch, onBack, onSetName, onSetColor, onSetBuild,
   onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform,
-  onOpenTask, statusActions, onRemoveProjectTag,
-  onDeleteProject, onDeleteTask,
+  onOpenTask, statusActions, onRemoveProjectTag, onDeleteTask,
 }) {
   const statuses = project.statuses;
   const [palette, setPalette] = useState(false);
@@ -87,13 +86,6 @@ export default function ProjectView({
           <EditableInput className="pb-buildedit" value={project.build} title="Версия проекта" onCommit={onSetBuild} />
         </div>
         <div className="pb-controls">
-          {view !== "stats" && (
-            <div className="pb-search">
-              <span className="pb-search-ic">⌕</span>
-              <input type="text" placeholder="Поиск задач…" value={search} onChange={(e) => onSearch(e.target.value)} />
-              {search && <button className="pb-search-x" onClick={() => onSearch("")}>✕</button>}
-            </div>
-          )}
           <div className="pb-switch">
             <button className={view === "stats" ? "on" : ""} onClick={() => onSetView("stats")}>Статистика</button>
             <button className={view === "board" ? "on" : ""} onClick={() => onSetView("board")}>Доска</button>
@@ -110,6 +102,16 @@ export default function ProjectView({
           <button className="pb-btn primary" onClick={() => { if (view === "stats") onSetView("board"); onAddTask(statuses[0]?.id); }}>+ Задача</button>
         </div>
       </div>
+
+      {view !== "stats" && (
+        <div className="pb-searchrow">
+          <div className="pb-search">
+            <span className="pb-search-ic">⌕</span>
+            <input type="text" placeholder="Поиск задач…" value={search} onChange={(e) => onSearch(e.target.value)} />
+            {search && <button className="pb-search-x" onClick={() => onSearch("")}>✕</button>}
+          </div>
+        </div>
+      )}
 
       {view !== "stats" && (
         <div className="pb-filterbar">
@@ -239,10 +241,6 @@ export default function ProjectView({
         </div>
       )}
 
-      {/* Удаление проекта */}
-      <div className="pb-danger-zone">
-        <button className="pb-deleteprojbtn" onClick={onDeleteProject}>Удалить проект…</button>
-      </div>
     </>
   );
 }

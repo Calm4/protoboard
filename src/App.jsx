@@ -22,7 +22,7 @@ export default function Protoboard() {
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot, loadShots,
     addTag, removeTag, removeProjectTag, loadActivity,
-    deleteProject,
+    deleteProject, setGradient,
     undo,
   } = useProjects();
 
@@ -226,6 +226,8 @@ export default function Protoboard() {
             }}
             isDark={dark}
             onToggleDark={toggleDark}
+            onSetGradient={(pid, grad) => setGradient(pid, grad)}
+            onDeleteProject={(pid) => setDeletingProjId(pid)}
           />
         ) : (
           <ProjectView
@@ -259,7 +261,6 @@ export default function Protoboard() {
               remove: (sid) => deleteStatus(openId, sid),
             }}
             onRemoveProjectTag={(tag) => removeProjectTag(openId, tag)}
-            onDeleteProject={() => setDeletingProjId(openId)}
             onDeleteTask={(tid) => { deleteTask(openId, tid); if (taskId === tid) setTaskId(null); }}
           />
         )}

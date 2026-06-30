@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { GRADIENTS } from "../constants.js";
 
 const isHoldStatus = (label) => {
   const l = (label || "").toLowerCase();
@@ -10,15 +11,15 @@ const isHoldStatus = (label) => {
   );
 };
 
-// Главный экран: статистика, глобальный поиск, список проектов, архив.
 export default function ProjectGrid({
   active, archived, allProjects, showArchived, onToggleArchived,
-  onOpen, onArchive, onUnarchive, onNewProject, onOpenTask, isDark, onToggleDark,
+  onOpen, onArchive, onUnarchive, onNewProject, onOpenTask,
+  isDark, onToggleDark, onSetGradient, onDeleteProject,
 }) {
   const [gSearch, setGSearch] = useState("");
   const [gOpen, setGOpen] = useState(false);
+  const [gradientFor, setGradientFor] = useState(null);
 
-  // Общая статистика по всем проектам
   const globalStats = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     let total = 0, open = 0, week = 0;
@@ -34,7 +35,6 @@ export default function ProjectGrid({
     return { total, open, week, projects: allProjects.length };
   }, [allProjects]);
 
-  // Результаты глобального поиска
   const searchResults = useMemo(() => {
     const q = gSearch.trim().toLowerCase();
     if (!q) return [];
@@ -50,10 +50,11 @@ export default function ProjectGrid({
   }, [gSearch, allProjects]);
 
   const handleResultClick = (pid, tid) => {
-    setGSearch("");
-    setGOpen(false);
+    setGSearch(""); setGOpen(false);
     onOpenTask(pid, tid);
   };
+
+  const closeGradientPicker = () => setGradientFor(null);
 
   return (
     <>
@@ -62,7 +63,7 @@ export default function ProjectGrid({
           <span className="pb-logo">Proto<b>board</b></span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="pb-btn ghost sm pb-darktoggle" title="Сменить тему" onClick={onToggleDark}>
+          <button className="pb-darktoggle" title="Сменить тему" onClick={onToggleDark}>
             {isDark ? "☀" : "☾"}
           </button>
           <button className="pb-btn primary" onClick={onNewProject}>+ Новый проект</button>
@@ -91,11 +92,7 @@ export default function ProjectGrid({
                 <div className="pb-gsempty">Ничего не найдено</div>
               ) : (
                 searchResults.map(({ projectId, projectName, projectColor, task }) => (
-                  <button
-                    key={task.id}
-                    className="pb-gsrow"
-                    onMouseDown={() => handleResultClick(projectId, task.id)}
-                  >
+                  <button key={task.id} className="pb-gsrow" onMouseDown={() => handleResultClick(projectId, task.id)}>
                     <span className="pb-gsdot" style={{ background: projectColor }} />
                     <span className="pb-gsproject">{projectName}</span>
                     <span className="pb-gsarrow">›</span>
@@ -122,17 +119,49 @@ export default function ProjectGrid({
         </div>
       )}
 
+      {/* Активные проекты */}
       <div className="pb-grid">
         {active.map((p) => {
           const total = p.tasks.length;
           const done = p.tasks.filter((t) => t.status === p.statuses[p.statuses.length - 1]?.id).length;
           const pct = total ? Math.round((done / total) * 100) : 0;
+          const hasGrad = !!p.gradient;
           return (
-            <div key={p.id} className="pb-proj" onClick={() => onOpen(p.id)}>
-              <span className="accentbar" style={{ background: p.color }} />
+            <div
+              key={p.id}
+              className={"pb-proj" + (hasGrad ? " has-gradient" : "")}
+              style={hasGrad ? { background: p.gradient } : undefined}
+              onClick={() => onOpen(p.id)}
+            >
+              {!hasGrad && <span className="accentbar" style={{ background: p.color }} />}
               <button className="pb-arch-btn" onClick={(e) => { e.stopPropagation(); onArchive(p.id); }}>В архив</button>
+              <button
+                className="pb-grad-btn"
+                title="Фон карточки"
+                onClick={(e) => { e.stopPropagation(); setGradientFor(gradientFor === p.id ? null : p.id); }}
+              >🎨</button>
+              {gradientFor === p.id && (
+                <>
+                  <div className="pb-colorscrim" onClick={(e) => { e.stopPropagation(); closeGradientPicker(); }} />
+                  <div className="pb-gradpop" onClick={(e) => e.stopPropagation()}>
+                    {GRADIENTS.map((g) => (
+                      <button
+                        key={g.value}
+                        className={"pb-gradswatch" + (p.gradient === g.value ? " on" : "")}
+                        title={g.label}
+                        style={g.value ? { background: g.value } : undefined}
+                        onClick={(e) => { e.stopPropagation(); onSetGradient(p.id, g.value); closeGradientPicker(); }}
+                      >
+                        {!g.value && "✕"}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
               <h3>{p.name}</h3>
-              <div className="pb-meta"><span className="pb-build">{p.build}</span> · {total} задач</div>
+              <div className="pb-meta">
+                <span className="pb-build">{p.build}</span> · {total} задач
+              </div>
               <div className="pb-prog"><i style={{ width: pct + "%" }} /></div>
               <div className="pb-count">{done}/{total} готово · {pct}%</div>
             </div>
@@ -141,6 +170,7 @@ export default function ProjectGrid({
         {active.length === 0 && <div className="pb-empty">Пока нет активных проектов. Создай первый прототип.</div>}
       </div>
 
+      {/* Архив */}
       {archived.length > 0 && (
         <>
           <div className="pb-sectionhead">
@@ -153,7 +183,10 @@ export default function ProjectGrid({
               {archived.map((p) => (
                 <div key={p.id} className="pb-proj" style={{ opacity: .68 }} onClick={() => onOpen(p.id)}>
                   <span className="accentbar" style={{ background: p.color }} />
-                  <button className="pb-arch-btn" onClick={(e) => { e.stopPropagation(); onUnarchive(p.id); }}>Вернуть</button>
+                  <div className="pb-arch-actions">
+                    <button className="pb-arch-btn static" onClick={(e) => { e.stopPropagation(); onUnarchive(p.id); }}>Вернуть</button>
+                    <button className="pb-arch-del" onClick={(e) => { e.stopPropagation(); onDeleteProject(p.id); }}>Удалить</button>
+                  </div>
                   <h3>{p.name}</h3>
                   <div className="pb-meta"><span className="pb-build">{p.build}</span> · {p.tasks.length} задач</div>
                 </div>
@@ -162,6 +195,9 @@ export default function ProjectGrid({
           )}
         </>
       )}
+
+      {/* Закрыть пикер градиента по клику вне */}
+      {gradientFor && <div className="pb-fullscrim" onClick={closeGradientPicker} />}
     </>
   );
 }

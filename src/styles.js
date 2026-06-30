@@ -271,7 +271,21 @@ export const css = `
 @keyframes pbtoast { from { transform:translate(-50%,8px); opacity:0 } to { transform:translate(-50%,0); opacity:1 } }
 
 /* ── Тёмная тема: кнопка переключения ───────────────────────────────────── */
-.pb-darktoggle { font-size:16px; padding:6px 10px; }
+/* ── Dark toggle — видимая кнопка ───────────────────────────────────────── */
+.pb-darktoggle {
+  font-size:16px; padding:6px 12px; cursor:pointer; border:1.5px solid var(--line);
+  border-radius:20px; background:var(--surface); color:var(--ink);
+  transition:background .15s, box-shadow .15s;
+  box-shadow:0 1px 4px rgba(20,22,31,.08);
+  font-family:'Inter'; font-weight:500;
+}
+.pb-darktoggle:hover { background:var(--surface2); box-shadow:0 3px 10px rgba(20,22,31,.12); }
+.pb.dark .pb-darktoggle { box-shadow:0 1px 4px rgba(0,0,0,.3); }
+.pb.dark .pb-darktoggle:hover { box-shadow:0 3px 10px rgba(0,0,0,.4); }
+
+/* ── Поиск внутри проекта на отдельной строке ───────────────────────────── */
+.pb-searchrow { margin-bottom:10px; }
+.pb-searchrow .pb-search { max-width:100%; }
 
 /* ── Глобальный поиск ────────────────────────────────────────────────────── */
 .pb-gsearch-wrap { position:relative; margin-bottom:12px; }
@@ -310,10 +324,36 @@ export const css = `
 .pb-bulkbar .pb-select option { background:var(--ink); color:#fff; }
 .pb-bulkbar .pb-btn { padding:6px 12px; font-size:12.5px; }
 
-/* ── Удаление проекта ────────────────────────────────────────────────────── */
-.pb-danger-zone { margin-top:40px; padding-top:16px; border-top:1px solid var(--line); }
-.pb-deleteprojbtn { background:none; border:none; color:var(--c-muted); font-size:12px; cursor:pointer; padding:4px 0; text-decoration:underline; text-decoration-style:dotted; }
-.pb-deleteprojbtn:hover { color:#B23636; }
+/* ── Градиент карточки проекта ───────────────────────────────────────────── */
+.pb-proj.has-gradient { color:#fff; border-color:transparent; }
+.pb-proj.has-gradient h3 { color:#fff; }
+.pb-proj.has-gradient .pb-meta, .pb-proj.has-gradient .pb-count { color:rgba(255,255,255,.72); }
+.pb-proj.has-gradient .pb-build { background:rgba(255,255,255,.18); color:#fff; border-color:rgba(255,255,255,.3); }
+.pb-proj.has-gradient .pb-prog { background:rgba(255,255,255,.2); }
+.pb-proj.has-gradient .pb-prog i { background:rgba(255,255,255,.85); }
+.pb-proj.has-gradient:hover { box-shadow:0 12px 30px rgba(0,0,0,.25); }
+
+/* Кнопка выбора градиента */
+.pb-grad-btn { position:absolute; top:10px; right:50px; opacity:0; border:none; background:rgba(255,255,255,.25); color:#fff; font-size:12px; padding:3px 7px; border-radius:7px; cursor:pointer; transition:opacity .12s; backdrop-filter:blur(4px); }
+.pb-proj:not(.has-gradient) .pb-grad-btn { background:var(--surface2); color:var(--soft); }
+.pb-proj:hover .pb-grad-btn { opacity:1; }
+.pb-grad-btn:hover { opacity:1!important; }
+
+/* Попап выбора градиента */
+.pb-gradpop { position:absolute; top:36px; right:8px; z-index:210; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; box-shadow:0 8px 26px rgba(0,0,0,.16); display:grid; grid-template-columns:repeat(4,28px); gap:6px; }
+.pb-gradswatch { width:28px; height:28px; border-radius:7px; border:2px solid transparent; cursor:pointer; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--c-muted); transition:transform .1s; }
+.pb-gradswatch:hover { transform:scale(1.15); }
+.pb-gradswatch.on { border-color:var(--ink); }
+.pb-fullscrim { position:fixed; inset:0; z-index:200; }
+
+/* Кнопки на архивных карточках */
+.pb-arch-actions { position:absolute; top:10px; right:10px; display:flex; gap:5px; opacity:0; transition:opacity .12s; }
+.pb-proj:hover .pb-arch-actions { opacity:1; }
+.pb-arch-btn.static { background:var(--surface2); color:var(--soft); border:none; font-size:11px; padding:4px 8px; border-radius:7px; cursor:pointer; }
+.pb-arch-del { background:rgba(178,54,54,.1); color:#B23636; border:none; font-size:11px; padding:4px 8px; border-radius:7px; cursor:pointer; font-family:'Inter'; }
+.pb-arch-del:hover { background:rgba(178,54,54,.2); }
+
+/* ── Удаление проекта (модал) ────────────────────────────────────────────── */
 .pb-btn.danger { background:#B23636; color:#fff; border-color:#B23636; }
 .pb-btn.danger:disabled { opacity:.4; cursor:default; }
 .pb-modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:500; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px 28px 24px; width:90%; max-width:400px; box-shadow:0 16px 48px rgba(0,0,0,.2); }

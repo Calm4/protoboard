@@ -50,6 +50,7 @@ const rowToProject = (data) => ({
   color: data.color || DEFAULT_COLOR,
   statuses: (data.statuses && data.statuses.length) ? data.statuses : DEFAULT_STATUSES,
   customTags: Array.isArray(data.customTags) ? data.customTags : [],
+  gradient: data.gradient || "",
   _createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
   tasks: [],
 });
@@ -233,6 +234,11 @@ export function useProjects() {
     if (old !== undefined) pushUndo({ label: "цвет проекта", undo: undoProjectFields(id, { color: old }) });
     patchProjectLocal(id, (p) => ({ ...p, color }));
     run(updateDoc(doc(db, "projects", id), { color }));
+  };
+
+  const setGradient = (id, gradient) => {
+    patchProjectLocal(id, (p) => ({ ...p, gradient }));
+    run(updateDoc(doc(db, "projects", id), { gradient }));
   };
 
   // ── Статусы ─────────────────────────────────────────────────────────────────
@@ -594,7 +600,7 @@ export function useProjects() {
   return {
     projects,
     loadState, reload,
-    createProject, setName, setColor, setArchived, setBuild,
+    createProject, setName, setColor, setArchived, setBuild, setGradient,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask,
     addShots, removeShot, loadShots,
