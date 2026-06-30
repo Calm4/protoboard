@@ -91,15 +91,22 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
             ) : (
               <>
                 {task.shots.map((s) => (
-                  <div key={s.id} className="pb-shotthumb">
-                    <img src={s.url} alt={s.name} title="Открыть в полном размере" onClick={() => setZoom(s)} />
-                    <button onClick={() => onRemoveShot(s.id)}>✕</button>
+                  <div key={s.id} className={"pb-shotthumb" + (s.uploading ? " uploading" : "")}>
+                    <img src={s.url} alt={s.name} title={s.uploading ? "Загрузка…" : "Открыть в полном размере"} onClick={() => !s.uploading && setZoom(s)} />
+                    {s.uploading
+                      ? <span className="pb-shotspinner">⟳</span>
+                      : <button onClick={() => onRemoveShot(s.id)}>✕</button>}
                   </div>
                 ))}
               </>
             )}
             <div className="pb-shotadd" onClick={() => fileRef.current?.click()}>+ Добавить скриншот</div>
           </div>
+          {task.uploadError && (
+            <div style={{ color: "#B23636", fontSize: 12, marginTop: 4 }}>
+              Не удалось загрузить — попробуй ещё раз или выбери файл меньшего размера.
+            </div>
+          )}
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles} />
         </div>
         <button className="pb-paneldelete" onClick={onDelete}>Удалить задачу</button>

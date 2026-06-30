@@ -212,7 +212,10 @@ export const css = `
 .pb-shots { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .pb-shotthumb { position:relative; aspect-ratio:4/3; border-radius:9px; overflow:hidden; border:1px solid var(--line); background:var(--surface2); }
 .pb-shotthumb img { width:100%; height:100%; object-fit:cover; cursor:zoom-in; }
+.pb-shotthumb.uploading img { opacity:.5; cursor:default; }
 .pb-shotthumb button { position:absolute; top:4px; right:4px; border:none; background:rgba(15,17,26,.6); color:#fff; width:20px; height:20px; border-radius:6px; cursor:pointer; font-size:12px; }
+.pb-shotspinner { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; animation:pbspin 1s linear infinite; }
+@keyframes pbspin { to { transform:rotate(360deg); } }
 .pb-shotadd { border:1px dashed var(--line); border-radius:9px; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; color:var(--soft); cursor:pointer; font-size:12px; text-align:center; padding:6px; }
 .pb-shotadd:hover { color:var(--accent); border-color:var(--accent); }
 .pb-paneldelete { color:#B23636; background:transparent; border:none; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer; margin-top:6px; }

@@ -414,12 +414,23 @@ export function useProjects() {
         .map((d) => ({ id: d.id, name: d.data().name, url: d.data().data, createdAt: d.data().createdAt || 0 }))
         .sort((a, b) => a.createdAt - b.createdAt)
         .map(({ id, name, url }) => ({ id, name, url }));
-      shotsCacheRef.current.set(tid, { shots, loaded: true });
-      patchTaskLocal(pid, tid, (t) => ({ ...t, shots, shotsLoaded: true }));
+      // Сохраняем uploading-превью, которые могли уже попасть в кэш до окончания запроса.
+      const prev = shotsCacheRef.current.get(tid);
+      const uploading = (prev?.shots || []).filter((s) => s.uploading);
+      shotsCacheRef.current.set(tid, { shots: [...shots, ...uploading], loaded: true });
+      patchTaskLocal(pid, tid, (t) => {
+        const inFlight = (t.shots || []).filter((s) => s.uploading);
+        return { ...t, shots: [...shots, ...inFlight], shotsLoaded: true };
+      });
     } catch (e) {
       console.error("[Protoboard] Не удалось загрузить скриншоты:", e.message);
-      shotsCacheRef.current.set(tid, { shots: [], loaded: true });
-      patchTaskLocal(pid, tid, (t) => ({ ...t, shots: [], shotsLoaded: true }));
+      const prev = shotsCacheRef.current.get(tid);
+      const uploading = (prev?.shots || []).filter((s) => s.uploading);
+      shotsCacheRef.current.set(tid, { shots: uploading, loaded: true });
+      patchTaskLocal(pid, tid, (t) => {
+        const inFlight = (t.shots || []).filter((s) => s.uploading);
+        return { ...t, shots: inFlight, shotsLoaded: true };
+      });
     }
   }, []);
 
@@ -427,10 +438,11 @@ export function useProjects() {
     files.forEach((file) => {
       const id = newId();
       const localUrl = URL.createObjectURL(file);
-      // Мгновенное превью пока идёт сжатие и запись в Firestore.
-      patchTaskLocal(pid, tid, (t) => ({
-        ...t, shots: [...t.shots, { id, name: file.name, url: localUrl, uploading: true }],
-      }));
+      const preview = { id, name: file.name, url: localUrl, uploading: true };
+      // Превью кладём и в кэш, чтобы rebuild() не потерял его во время загрузки.
+      const cEntry = shotsCacheRef.current.get(tid) || { shots: [], loaded: true };
+      shotsCacheRef.current.set(tid, { ...cEntry, shots: [...cEntry.shots, preview] });
+      patchTaskLocal(pid, tid, (t) => ({ ...t, shots: [...t.shots, preview], uploadError: false }));
       (async () => {
         try {
           const { blob } = await compressImage(file);
@@ -438,19 +450,21 @@ export function useProjects() {
           await setDoc(doc(db, "attachments", id), {
             taskId: tid, name: file.name, data: dataUrl, createdAt: Date.now(),
           });
-          // Обновляем кэш и заменяем временную ссылку на сохранённую.
-          const cached = shotsCacheRef.current.get(tid) || { shots: [], loaded: true };
           const newShot = { id, name: file.name, url: dataUrl };
-          shotsCacheRef.current.set(tid, {
-            ...cached,
-            shots: [...cached.shots.filter((s) => s.id !== id), newShot],
+          const c = shotsCacheRef.current.get(tid) || { shots: [], loaded: true };
+          shotsCacheRef.current.set(tid, { ...c, shots: c.shots.map((s) => s.id === id ? newShot : s) });
+          // Если rebuild() успел перетереть состояние — добавляем заново.
+          patchTaskLocal(pid, tid, (t) => {
+            const shots = t.shots.some((s) => s.id === id)
+              ? t.shots.map((s) => s.id === id ? newShot : s)
+              : [...t.shots, newShot];
+            return { ...t, shots, shotsLoaded: true };
           });
-          patchTaskLocal(pid, tid, (t) => ({
-            ...t, shots: t.shots.map((s) => s.id === id ? newShot : s),
-          }));
         } catch (e) {
           console.error("[Protoboard] Не удалось загрузить скриншот:", e.message);
-          patchTaskLocal(pid, tid, (t) => ({ ...t, shots: t.shots.filter((s) => s.id !== id) }));
+          const c = shotsCacheRef.current.get(tid);
+          if (c) shotsCacheRef.current.set(tid, { ...c, shots: c.shots.filter((s) => s.id !== id) });
+          patchTaskLocal(pid, tid, (t) => ({ ...t, shots: t.shots.filter((s) => s.id !== id), uploadError: true }));
         }
       })();
     });
