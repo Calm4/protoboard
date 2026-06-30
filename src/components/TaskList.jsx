@@ -63,6 +63,7 @@ export default function TaskList({ tasks, statuses, statusActions, onMoveTask, o
   return (
     <div className="pb-list">
       <div className="pb-row header">
+        <span className="pb-close-col" />
         <span>Задача</span>
         {hdr("platform", "Платформа", "col-plat")}
         {hdr("version", "Версия", "col-ver")}
@@ -105,14 +106,18 @@ export default function TaskList({ tasks, statuses, statusActions, onMoveTask, o
                 onDrop={byStatus && !selectMode ? (e) => { e.stopPropagation(); dropOnRow(t); } : undefined}
                 onClick={() => selectMode ? onToggleSelect(t.id) : onOpenTask(t.id)}
               >
-                {selectMode && <span className={"pb-check" + (selectedIds.has(t.id) ? " on" : "")} />}
-                {!selectMode && onToggleClosed && (
-                  <button
-                    className={"pb-closebtn" + (t.closed ? " done" : "")}
-                    title={t.closed ? "Открыть задачу" : "Отметить выполненной"}
-                    onClick={(e) => { e.stopPropagation(); onToggleClosed(t.id); }}
-                  />
-                )}
+                <div className="pb-close-col" onClick={(e) => e.stopPropagation()}>
+                  {selectMode
+                    ? <span className={"pb-check" + (selectedIds.has(t.id) ? " on" : "")} />
+                    : onToggleClosed && (
+                        <button
+                          className={"pb-closebtn" + (t.closed ? " done" : "")}
+                          title={t.closed ? "Открыть задачу" : "Отметить выполненной"}
+                          onClick={(e) => { e.stopPropagation(); onToggleClosed(t.id); }}
+                        />
+                      )
+                  }
+                </div>
                 <div className="pb-rowtitle">
                   {t.num != null && <span className="pb-num">#{t.num}</span>}
                   <b>{t.title}</b>
