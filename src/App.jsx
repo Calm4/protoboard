@@ -79,6 +79,55 @@ export default function Protoboard() {
     if (p) setNewProj(null);
   };
 
+  // ── Навигация через браузерную историю (Назад / Вперёд) ─────────────────────
+  const navPrevRef = useRef(null);
+  const fromPopRef = useRef(false);
+  const navInitRef = useRef(false);
+
+  // Записываем текущее состояние в историю при каждом переходе.
+  useEffect(() => {
+    const nav = { openId, view, taskId };
+    if (fromPopRef.current) {
+      // Это восстановление из popstate — не добавляем новую запись.
+      fromPopRef.current = false;
+      navPrevRef.current = nav;
+      return;
+    }
+    if (!navInitRef.current) {
+      // Первый рендер: replaceState (не добавляет запись в историю).
+      navInitRef.current = true;
+      navPrevRef.current = nav;
+      window.history.replaceState(nav, "");
+      return;
+    }
+    const prev = navPrevRef.current;
+    if (prev && prev.openId === nav.openId && prev.view === nav.view && prev.taskId === nav.taskId) return;
+    navPrevRef.current = nav;
+    window.history.pushState(nav, "");
+  }, [openId, view, taskId]);
+
+  // Обрабатываем нажатие кнопки «Назад» / «Вперёд».
+  useEffect(() => {
+    const onPop = (e) => {
+      fromPopRef.current = true;
+      const s = e.state;
+      if (!s) {
+        setOpenId(null);
+        setTaskId(null);
+      } else {
+        setOpenId(s.openId ?? null);
+        setView(s.view ?? "stats");
+        setTaskId(s.taskId ?? null);
+        if (s.taskId && s.openId) {
+          loadShots(s.openId, s.taskId);
+          loadActivity(s.openId, s.taskId);
+        }
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [loadShots, loadActivity]);
+
   // Открытие задачи по ссылке (#task=<uuid>) — у любого, кто перейдёт по ней.
   const projectsRef = useRef(projects);
   projectsRef.current = projects;
@@ -92,8 +141,8 @@ export default function Protoboard() {
       setFilters(EMPTY_FILTERS);
       setSearch("");
       setTaskId(m[1]);
-      // «гасим» якорь, чтобы живые обновления не открывали задачу повторно
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      // Сохраняем state, только убираем хэш из адресной строки.
+      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
     }
   }, []);
   useEffect(() => { openTaskFromHash(); }, [projects, openTaskFromHash]);
