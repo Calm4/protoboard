@@ -133,6 +133,12 @@ export default function Board({ tasks, statuses, statusActions, onReorderTask, o
                 onClick={() => onOpenTask(t.id)}
               >
                 <h4>{t.title}</h4>
+                {(t.tags || []).length > 0 && (
+                  <div className="pb-cardtags">
+                    {t.tags.slice(0, 3).map((tag) => <span key={tag} className="pb-tag-sm">{tag}</span>)}
+                    {t.tags.length > 3 && <span className="pb-tag-sm more">+{t.tags.length - 3}</span>}
+                  </div>
+                )}
                 <div className="pb-cardfoot">
                   {t.num != null && <span className="pb-num">#{t.num}</span>}
                   <span className={"pb-prio " + t.priority}>{PRIORITIES.find((p) => p.key === t.priority).label}</span>

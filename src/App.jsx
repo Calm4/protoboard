@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { css } from "./styles.js";
-import { DEFAULT_COLOR, EMPTY_FILTERS } from "./constants.js";
+import { DEFAULT_COLOR, EMPTY_FILTERS, GLOBAL_TAGS } from "./constants.js";
 import { useProjects } from "./hooks/useProjects.js";
 import { useAuth } from "./hooks/useAuth.js";
 import ProjectGrid from "./components/ProjectGrid.jsx";
@@ -20,6 +20,7 @@ export default function Protoboard() {
     projects, loadState, reload, createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot, loadShots,
+    addTag, removeTag, removeProjectTag, loadActivity,
     undo,
   } = useProjects();
 
@@ -53,6 +54,7 @@ export default function Protoboard() {
       else if (t.version !== f.version) return false;
     }
     if (f.num.trim() !== "" && String(t.num ?? "") !== f.num.trim()) return false;
+    if (f.tags && f.tags.length > 0 && !f.tags.every((tag) => (t.tags || []).includes(tag))) return false;
     if (f.dateFrom || f.dateTo) {
       if (!t.created) return false;
       const c = new Date(t.created).getTime();
@@ -67,7 +69,7 @@ export default function Protoboard() {
   const resetFilters = () => setFilters(EMPTY_FILTERS);
 
   // Действия, связывающие интерфейс с данными.
-  const openProject = (id) => { setOpenId(id); setView("board"); resetFilters(); setSearch(""); };
+  const openProject = (id) => { setOpenId(id); setView("stats"); resetFilters(); setSearch(""); };
   const handleAddTask = (status) => {
     const t = addTask(openId, status, project.build);
     setTaskId(t.id);
@@ -177,7 +179,10 @@ export default function Protoboard() {
             onReorderTask={(dragId, status, beforeId) => reorderTask(openId, dragId, status, beforeId)}
             onSetPriority={(tid, priority) => editTask(openId, tid, { priority })}
             onSetPlatform={(tid, platform) => editTask(openId, tid, { platform })}
-            onOpenTask={(tid) => { setTaskId(tid); if (tid && openId) loadShots(openId, tid); }}
+            onOpenTask={(tid) => {
+              setTaskId(tid);
+              if (tid && openId) { loadShots(openId, tid); loadActivity(openId, tid); }
+            }}
             statusActions={{
               add: () => addStatus(openId),
               rename: (sid, label) => renameStatus(openId, sid, label),
@@ -185,6 +190,7 @@ export default function Protoboard() {
               reorder: (ordered) => reorderStatuses(openId, ordered),
               remove: (sid) => deleteStatus(openId, sid),
             }}
+            onRemoveProjectTag={(tag) => removeProjectTag(openId, tag)}
           />
         )}
       </div>
@@ -200,6 +206,9 @@ export default function Protoboard() {
           onDelete={() => { deleteTask(openId, taskId); setTaskId(null); }}
           onAddShots={(files) => addShots(openId, taskId, files)}
           onRemoveShot={(shotId) => removeShot(openId, taskId, shotId)}
+          onAddTag={(tag) => addTag(openId, taskId, tag)}
+          onRemoveTag={(tag) => removeTag(openId, taskId, tag)}
+          availableTags={[...new Set([...GLOBAL_TAGS, ...(project?.customTags || [])])]}
         />
       )}
 

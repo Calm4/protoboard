@@ -254,10 +254,95 @@ export const css = `
 .pb-toast { position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:70; background:var(--ink); color:#fff; font-family:'Inter'; font-weight:500; font-size:13.5px; padding:10px 16px; border-radius:10px; box-shadow:0 10px 30px rgba(15,17,26,.28); animation:pbtoast .16s ease; }
 @keyframes pbtoast { from { transform:translate(-50%,8px); opacity:0 } to { transform:translate(-50%,0); opacity:1 } }
 
+/* ── Статистика ──────────────────────────────────────────────────────────── */
+.pb-stats{ padding:24px 0 40px; }
+.pb-stat-cards{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px; }
+.pb-statcard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 20px 14px; display:flex; flex-direction:column; gap:4px; }
+.pb-statcard.accent{ border-color:var(--accent); background:rgba(91,75,224,.06); }
+.pb-statcard-val{ font-size:28px; font-weight:700; color:var(--text); line-height:1; }
+.pb-statcard.accent .pb-statcard-val{ color:var(--accent); }
+.pb-statcard-lbl{ font-size:12px; color:var(--c-muted); }
+.pb-stat-section{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px 18px; margin-bottom:12px; }
+.pb-stat-head{ font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--c-muted); margin-bottom:12px; }
+.pb-stat-brow{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.pb-stat-blbl{ font-size:13px; color:var(--text); min-width:130px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pb-stat-btrack{ flex:1; height:8px; background:var(--bg); border-radius:4px; overflow:hidden; }
+.pb-stat-bfill{ height:100%; border-radius:4px; transition:width .3s ease; }
+.pb-stat-bnum{ font-size:13px; font-weight:600; color:var(--text); min-width:24px; text-align:right; }
+.pb-stat-2col{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.pb-stat-prow{ display:flex; align-items:center; gap:8px; padding:4px 0; }
+.pb-stat-pdot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.pb-stat-plbl{ font-size:13px; color:var(--text); flex:1; }
+.pb-stat-pcount{ font-size:13px; font-weight:600; color:var(--text); }
+.pb-sparkline{ width:100%; height:52px; display:block; margin-top:4px; }
+
+/* ── Теги ────────────────────────────────────────────────────────────────── */
+.pb-tagrow{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; position:relative; }
+.pb-tag{ display:inline-flex; align-items:center; gap:3px; background:rgba(91,75,224,.1); color:var(--accent); border-radius:20px; padding:2px 8px 2px 10px; font-size:12px; font-weight:500; }
+.pb-tag-x{ background:none; border:none; cursor:pointer; color:var(--accent); opacity:.7; padding:0 0 0 2px; font-size:11px; line-height:1; }
+.pb-tag-x:hover{ opacity:1; }
+.pb-taginput-wrap{ position:relative; }
+.pb-taginput{ border:1px dashed var(--line); background:transparent; border-radius:20px; padding:3px 10px; font-size:12px; color:var(--text); outline:none; width:130px; transition:border-color .15s; }
+.pb-taginput:focus{ border-color:var(--accent); }
+.pb-tagdrop{ position:absolute; top:calc(100% + 4px); left:0; z-index:210; background:var(--panel); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.1); min-width:160px; max-height:200px; overflow-y:auto; padding:4px; }
+.pb-tagopt{ display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:7px 10px; font-size:13px; color:var(--text); border-radius:7px; }
+.pb-tagopt:hover{ background:var(--bg); }
+.pb-tagopt.new{ color:var(--accent); font-weight:500; }
+.pb-tagscrim{ position:fixed; inset:0; z-index:200; }
+.pb-tag-sm{ display:inline-block; background:var(--bg); color:var(--c-muted); border-radius:20px; padding:1px 7px; font-size:11px; }
+.pb-tag-sm.more{ background:rgba(91,75,224,.08); color:var(--accent); }
+.pb-cardtags{ display:flex; flex-wrap:wrap; gap:4px; margin:4px 0 6px; }
+
+/* ── История изменений ───────────────────────────────────────────────────── */
+.pb-act-toggle{ background:none; border:none; cursor:pointer; font-size:12px; color:var(--c-muted); padding:2px 0; display:flex; align-items:center; gap:6px; }
+.pb-act-toggle:hover{ color:var(--text); }
+.pb-act-cnt{ background:var(--bg); border-radius:20px; padding:1px 7px; font-size:11px; font-weight:600; }
+.pb-activity{ margin-top:8px; display:flex; flex-direction:column; gap:0; max-height:220px; overflow-y:auto; }
+.pb-act-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); }
+.pb-act-row:last-child{ border-bottom:none; }
+.pb-act-action{ font-size:12px; color:var(--text); }
+.pb-act-time{ font-size:11px; color:var(--c-muted); flex-shrink:0; margin-left:8px; }
+.pb-act-row.muted{ color:var(--c-muted); font-size:12px; }
+
+/* ── Мобильная оптимизация (≤ 768px) ────────────────────────────────────── */
 @media (max-width:720px){
   .pb-board{ grid-template-columns:1fr; }
   .pb-row{ grid-template-columns:1fr 130px; }
   .pb-row .col-plat,.pb-row .col-ver,.pb-row .col-prio{ display:none; }
 }
+@media (max-width:768px){
+  /* Шапка проекта */
+  .pb-phead{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .pb-controls{ width:100%; flex-wrap:wrap; gap:6px; }
+  .pb-search{ flex:1 1 100%; order:-1; }
+  .pb-switch{ flex:1 1 auto; }
+  .pb-switch button{ padding:6px 10px; font-size:12px; }
+
+  /* Панель задачи — на весь экран */
+  .pb-panel{
+    position:fixed; inset:0; width:100%; max-width:100%;
+    border-radius:0; transform:none!important;
+    padding:16px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .pb-seg{ flex-wrap:wrap; }
+  .pb-seg button{ flex:1 1 auto; min-width:80px; }
+
+  /* Сводка статистики — 2 колонки */
+  .pb-stat-cards{ grid-template-columns:1fr 1fr; }
+  .pb-stat-2col{ grid-template-columns:1fr; }
+
+  /* Фильтр — попап тоже на всю ширину */
+  .pb-filterpop{ width:calc(100vw - 32px); max-height:80vh; overflow-y:auto; }
+
+  /* Карточки доски — нормальная ширина */
+  .pb-col{ min-width:280px; }
+
+  /* Тег-дроп — выше кнопки на мобиле */
+  .pb-tagdrop{ min-width:140px; }
+
+  /* Скрываем горизонтальный скролбар (есть touch-scroll) */
+  .pb-scrollthumb{ display:none; }
+}
+
 @media (prefers-reduced-motion: reduce){ .pb *,.pb *::before { animation:none!important; transition:none!important; } }
 `;

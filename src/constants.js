@@ -31,7 +31,7 @@ export const prioLabel = (k) => PRIORITIES.find((p) => p.key === k).label;
 // platform/priority/status/version: "all"; num: точный номер #N; dateFrom/dateTo: YYYY-MM-DD.
 export const EMPTY_FILTERS = {
   platform: "all", priority: "all", status: "all", version: "all",
-  num: "", dateFrom: "", dateTo: "",
+  num: "", dateFrom: "", dateTo: "", tags: [],
 };
 
 // Палитра цветов проекта (полоска слева / кружок у названия). 18 оттенков.
@@ -54,3 +54,9 @@ export const PLAT_UI = {
   ios: { fg: "#2C5BB5", bg: "#E5ECF9", bd: "#CFE0F4" },
   android: { fg: "#1C7A4A", bg: "#E1F2E8", bd: "#C5E6D2" },
 };
+
+// Глобальные теги — видны во всех проектах, нельзя удалить.
+export const GLOBAL_TAGS = [
+  "Баг", "Задача", "UI", "Баланс", "Краш",
+  "Перфоманс", "Дизайн", "Геймплей", "Сеть", "Звук",
+];

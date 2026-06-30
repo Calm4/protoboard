@@ -5,7 +5,7 @@ import {
 } from "firebase/firestore";
 import { db, isConfigured } from "../lib/firebase.js";
 import { compressImage } from "../lib/image.js";
-import { DEFAULT_COLOR, DEFAULT_STATUSES, PROJECT_COLORS } from "../constants.js";
+import { DEFAULT_COLOR, DEFAULT_STATUSES, PROJECT_COLORS, GLOBAL_TAGS } from "../constants.js";
 
 // Blob → base64 data URL (для хранения картинок в Firestore).
 const blobToDataUrl = (blob) =>
@@ -32,8 +32,11 @@ const rowToTask = (data) => ({
   order: data.sortOrder ?? 0,
   num: data.num ?? null,
   created: data.createdAt ? new Date(data.createdAt).toISOString() : null,
+  tags: Array.isArray(data.tags) ? data.tags : [],
   shots: [],
   shotsLoaded: false,
+  activity: [],
+  activityLoaded: false,
 });
 
 const rowToProject = (data) => ({
@@ -43,6 +46,7 @@ const rowToProject = (data) => ({
   archived: data.archived || false,
   color: data.color || DEFAULT_COLOR,
   statuses: (data.statuses && data.statuses.length) ? data.statuses : DEFAULT_STATUSES,
+  customTags: Array.isArray(data.customTags) ? data.customTags : [],
   _createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
   tasks: [],
 });
@@ -72,6 +76,7 @@ export function useProjects() {
   // Кэш скриншотов: taskId → { shots, loaded }. Живёт в рефе, чтобы rebuild()
   // не сбрасывал уже загруженные скриншоты при каждом обновлении Firestore.
   const shotsCacheRef = useRef(new Map());
+  const activityCacheRef = useRef(new Map());
 
   // ── Локальные помощники ─────────────────────────────────────────────────────
   const patchProjectLocal = (id, fn) =>
@@ -109,8 +114,15 @@ export function useProjects() {
             .filter((t) => t._projectId === p.id)
             .sort((a, b) => (a.order || 0) - (b.order || 0))
             .map((t) => {
-            const cached = shotsCacheRef.current.get(t.id);
-            return { ...t, shots: cached?.shots || [], shotsLoaded: cached?.loaded || false };
+            const sc = shotsCacheRef.current.get(t.id);
+            const ac = activityCacheRef.current.get(t.id);
+            return {
+              ...t,
+              shots: sc?.shots || [],
+              shotsLoaded: sc?.loaded || false,
+              activity: ac?.entries || [],
+              activityLoaded: ac?.loaded || false,
+            };
           }),
         }));
       setProjects(assembled);
@@ -315,15 +327,18 @@ export function useProjects() {
     const task = {
       id, title: "Новая задача", desc: "", notes: "",
       priority: "med", status, platform: "both", version: build, order, num,
-      created: new Date().toISOString(), shots: [], shotsLoaded: true,
+      created: new Date().toISOString(), tags: [], shots: [], shotsLoaded: true,
+      activity: [], activityLoaded: true,
     };
     shotsCacheRef.current.set(id, { shots: [], loaded: true });
+    activityCacheRef.current.set(id, { entries: [], loaded: true });
     patchProjectLocal(pid, (p) => ({ ...p, tasks: [...p.tasks, task] }));
     run(setDoc(doc(db, "tasks", id), {
       projectId: pid, title: task.title, description: "", notes: "",
       priority: "med", status, platform: "both", version: build,
-      sortOrder: order, num, createdAt: Date.now(),
+      sortOrder: order, num, tags: [], createdAt: Date.now(),
     }));
+    logActivity(pid, id, "Задача создана");
     pushUndo({
       label: "создание задачи",
       undo: async () => {
@@ -341,6 +356,8 @@ export function useProjects() {
     if (t) pushUndo({ label: "перемещение задачи", undo: undoTaskFields(pid, tid, { status: t.status, order: t.order }) });
     patchTaskLocal(pid, tid, (t) => ({ ...t, status, order }));
     run(updateDoc(doc(db, "tasks", tid), { status, sortOrder: order }));
+    const label = proj?.statuses.find((s) => s.id === status)?.label || status;
+    logActivity(pid, tid, `Статус → ${label}`);
   };
 
   const reorderTask = (pid, dragId, targetStatus, beforeId) => {
@@ -402,6 +419,73 @@ export function useProjects() {
     patchTaskLocal(pid, tid, (t) => ({ ...t, ...patch }));
     const dbPatch = taskFieldsToDb(patch);
     if (Object.keys(dbPatch).length) run(updateDoc(doc(db, "tasks", tid), dbPatch));
+    if (patch.priority) {
+      const lbl = { high: "Высокий", med: "Средний", low: "Низкий" }[patch.priority] || patch.priority;
+      logActivity(pid, tid, `Приоритет → ${lbl}`);
+    }
+  };
+
+  // ── Лог изменений ───────────────────────────────────────────────────────────
+  const logActivity = (pid, tid, action) => {
+    run(setDoc(doc(db, "activity", newId()), { projectId: pid, taskId: tid, action, timestamp: Date.now() }));
+  };
+
+  const loadActivity = useCallback(async (pid, tid) => {
+    if (activityCacheRef.current.get(tid)?.loaded) return;
+    try {
+      const snap = await getDocs(query(collection(db, "activity"), where("taskId", "==", tid)));
+      const entries = snap.docs
+        .map((d) => ({ id: d.id, action: d.data().action, timestamp: d.data().timestamp || 0 }))
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 50);
+      activityCacheRef.current.set(tid, { entries, loaded: true });
+      patchTaskLocal(pid, tid, (t) => ({ ...t, activity: entries, activityLoaded: true }));
+    } catch (e) {
+      console.error("[Protoboard] Не удалось загрузить историю:", e.message);
+      activityCacheRef.current.set(tid, { entries: [], loaded: true });
+      patchTaskLocal(pid, tid, (t) => ({ ...t, activity: [], activityLoaded: true }));
+    }
+  }, []);
+
+  // ── Теги ────────────────────────────────────────────────────────────────────
+  const addTag = (pid, tid, tag) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj) return;
+    const task = proj.tasks.find((t) => t.id === tid);
+    if (!task || task.tags.includes(tag)) return;
+    const newTags = [...task.tags, tag];
+    patchTaskLocal(pid, tid, (t) => ({ ...t, tags: newTags }));
+    run(updateDoc(doc(db, "tasks", tid), { tags: newTags }));
+    if (!GLOBAL_TAGS.includes(tag) && !proj.customTags.includes(tag)) {
+      const newCustomTags = [...proj.customTags, tag];
+      patchProjectLocal(pid, (p) => ({ ...p, customTags: newCustomTags }));
+      run(updateDoc(doc(db, "projects", pid), { customTags: newCustomTags }));
+    }
+    logActivity(pid, tid, `Тег: +${tag}`);
+  };
+
+  const removeTag = (pid, tid, tag) => {
+    const task = projects.find((p) => p.id === pid)?.tasks.find((t) => t.id === tid);
+    if (!task) return;
+    const newTags = task.tags.filter((t) => t !== tag);
+    patchTaskLocal(pid, tid, (t) => ({ ...t, tags: newTags }));
+    run(updateDoc(doc(db, "tasks", tid), { tags: newTags }));
+    logActivity(pid, tid, `Тег: -${tag}`);
+  };
+
+  const removeProjectTag = (pid, tag) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj) return;
+    const newCustomTags = proj.customTags.filter((t) => t !== tag);
+    patchProjectLocal(pid, (p) => ({ ...p, customTags: newCustomTags }));
+    run(updateDoc(doc(db, "projects", pid), { customTags: newCustomTags }));
+    proj.tasks.forEach((task) => {
+      if (task.tags.includes(tag)) {
+        const newTags = task.tags.filter((t) => t !== tag);
+        patchTaskLocal(pid, task.id, (t) => ({ ...t, tags: newTags }));
+        run(updateDoc(doc(db, "tasks", task.id), { tags: newTags }));
+      }
+    });
   };
 
   // ── Скриншоты (Firestore base64) ────────────────────────────────────────────
@@ -450,6 +534,7 @@ export function useProjects() {
           await setDoc(doc(db, "attachments", id), {
             taskId: tid, name: file.name, data: dataUrl, createdAt: Date.now(),
           });
+          logActivity(pid, tid, "Скриншот добавлен");
           const newShot = { id, name: file.name, url: dataUrl };
           const c = shotsCacheRef.current.get(tid) || { shots: [], loaded: true };
           shotsCacheRef.current.set(tid, { ...c, shots: c.shots.map((s) => s.id === id ? newShot : s) });
@@ -475,6 +560,7 @@ export function useProjects() {
     const cached = shotsCacheRef.current.get(tid);
     if (cached) shotsCacheRef.current.set(tid, { ...cached, shots: cached.shots.filter((s) => s.id !== shotId) });
     run(deleteDoc(doc(db, "attachments", shotId)));
+    logActivity(pid, tid, "Скриншот удалён");
   };
 
   return {
@@ -484,6 +570,8 @@ export function useProjects() {
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask,
     addShots, removeShot, loadShots,
+    addTag, removeTag, removeProjectTag,
+    loadActivity,
     undo,
   };
 }

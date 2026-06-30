@@ -3,14 +3,17 @@ import { PRIORITIES, PLATFORMS } from "../constants.js";
 import { EditableInput, EditableTextarea } from "./Editable.jsx";
 import { downloadImage } from "../lib/image.js";
 
-// Боковая панель редактирования задачи: статус, приоритет, платформа, версия,
-// описание, доп. инфо и скриншоты. Открывается поверх затемнённого фона.
-export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask, onDelete, onAddShots, onRemoveShot }) {
+export default function TaskPanel({
+  task, statuses, onClose, onEdit, onMoveTask, onDelete, onAddShots, onRemoveShot,
+  onAddTag, onRemoveTag, availableTags = [],
+}) {
   const fileRef = useRef(null);
-  const [zoom, setZoom] = useState(null); // ссылка на скриншот, открытый на весь экран
+  const [zoom, setZoom] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [tagOpen, setTagOpen] = useState(false);
+  const [actOpen, setActOpen] = useState(false);
 
-  // Ссылка на конкретную задачу: открывается у любого, кто по ней перейдёт.
   const copyLink = () => {
     const url = window.location.origin + window.location.pathname + "#task=" + task.id;
     if (navigator.clipboard?.writeText) {
@@ -20,11 +23,22 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
     }
   };
 
-  // Отдаём выбранные файлы наверх — загрузку в хранилище берёт на себя хук данных.
   const handleFiles = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length) onAddShots(files);
     e.target.value = "";
+  };
+
+  const existingTags = task.tags || [];
+  const filteredTags = availableTags.filter(
+    (t) => !existingTags.includes(t) && (!tagInput.trim() || t.toLowerCase().includes(tagInput.trim().toLowerCase()))
+  );
+  const canCreateNew = tagInput.trim() && !availableTags.includes(tagInput.trim()) && !existingTags.includes(tagInput.trim());
+
+  const commitTag = (tag) => {
+    onAddTag(tag);
+    setTagInput("");
+    setTagOpen(false);
   };
 
   return (
@@ -46,6 +60,7 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
           placeholder="Что нужно сделать или что за баг…"
           onCommit={(v) => onEdit({ title: v })}
         />
+
         <div className="pb-field">
           <label>Статус</label>
           <div className="pb-seg">
@@ -59,6 +74,7 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
             ))}
           </div>
         </div>
+
         <div className="pb-field">
           <label>Приоритет</label>
           <div className="pb-seg">
@@ -67,6 +83,7 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
             ))}
           </div>
         </div>
+
         <div className="pb-field">
           <label>Платформа</label>
           <div className="pb-seg">
@@ -75,14 +92,56 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
             ))}
           </div>
         </div>
+
         <div className="pb-field">
           <label>Версия (билд)</label>
           <EditableInput className="pb-input mono" value={task.version} placeholder="v0.4" onCommit={(v) => onEdit({ version: v })} />
         </div>
+
+        {/* Теги */}
+        <div className="pb-field">
+          <label>Теги</label>
+          <div className="pb-tagrow">
+            {existingTags.map((tag) => (
+              <span key={tag} className="pb-tag">
+                {tag}
+                <button className="pb-tag-x" onClick={() => onRemoveTag(tag)}>✕</button>
+              </span>
+            ))}
+            <div className="pb-taginput-wrap">
+              <input
+                className="pb-taginput"
+                placeholder="+ Добавить тег"
+                value={tagInput}
+                onFocus={() => setTagOpen(true)}
+                onChange={(e) => { setTagInput(e.target.value); setTagOpen(true); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && tagInput.trim()) commitTag(tagInput.trim());
+                  if (e.key === "Escape") { setTagInput(""); setTagOpen(false); }
+                }}
+              />
+              {tagOpen && (filteredTags.length > 0 || canCreateNew) && (
+                <div className="pb-tagdrop">
+                  {filteredTags.map((t) => (
+                    <button key={t} className="pb-tagopt" onMouseDown={() => commitTag(t)}>{t}</button>
+                  ))}
+                  {canCreateNew && (
+                    <button className="pb-tagopt new" onMouseDown={() => commitTag(tagInput.trim())}>
+                      + Создать «{tagInput.trim()}»
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            {tagOpen && <div className="pb-tagscrim" onMouseDown={() => { setTagOpen(false); setTagInput(""); }} />}
+          </div>
+        </div>
+
         <div className="pb-field">
           <label>Доп. условия / инфо</label>
           <EditableTextarea className="pb-area" rows={2} value={task.notes} autoGrow placeholder="Устройство, шаги воспроизведения…" onCommit={(v) => onEdit({ notes: v })} />
         </div>
+
         <div className="pb-field">
           <label>Скриншоты {task.shotsLoaded ? `(${task.shots.length})` : ""}</label>
           <div className="pb-shots">
@@ -109,10 +168,35 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
           )}
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles} />
         </div>
+
+        {/* История изменений */}
+        <div className="pb-field">
+          <button
+            className="pb-act-toggle"
+            onClick={() => setActOpen((o) => !o)}
+          >
+            {actOpen ? "▲" : "▼"} История изменений
+            {(task.activity || []).length > 0 && <span className="pb-act-cnt">{task.activity.length}</span>}
+          </button>
+          {actOpen && (
+            <div className="pb-activity">
+              {!task.activityLoaded ? (
+                <div className="pb-act-row muted">Загрузка…</div>
+              ) : (task.activity || []).length === 0 ? (
+                <div className="pb-act-row muted">Нет записей</div>
+              ) : (task.activity || []).map((e) => (
+                <div key={e.id} className="pb-act-row">
+                  <span className="pb-act-action">{e.action}</span>
+                  <span className="pb-act-time">{relTime(e.timestamp)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button className="pb-paneldelete" onClick={onDelete}>Удалить задачу</button>
       </div>
 
-      {/* Просмотр скриншота на весь экран. Клик по фону — закрыть. */}
       {zoom && (
         <div className="pb-lightbox" onClick={() => setZoom(null)}>
           <button
@@ -125,4 +209,17 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
       )}
     </>
   );
+}
+
+function relTime(ts) {
+  if (!ts) return "";
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "только что";
+  if (m < 60) return `${m} мин. назад`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} ч. назад`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d} д. назад`;
+  return new Date(ts).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 }
