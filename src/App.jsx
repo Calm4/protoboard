@@ -19,7 +19,7 @@ export default function Protoboard() {
   const {
     projects, loadState, reload, createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
-    addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot,
+    addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot, loadShots,
     undo,
   } = useProjects();
 
@@ -177,7 +177,7 @@ export default function Protoboard() {
             onReorderTask={(dragId, status, beforeId) => reorderTask(openId, dragId, status, beforeId)}
             onSetPriority={(tid, priority) => editTask(openId, tid, { priority })}
             onSetPlatform={(tid, platform) => editTask(openId, tid, { platform })}
-            onOpenTask={setTaskId}
+            onOpenTask={(tid) => { setTaskId(tid); if (tid && openId) loadShots(openId, tid); }}
             statusActions={{
               add: () => addStatus(openId),
               rename: (sid, label) => renameStatus(openId, sid, label),

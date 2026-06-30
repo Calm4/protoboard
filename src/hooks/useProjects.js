@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   collection, doc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot,
+  getDocs, query, where,
 } from "firebase/firestore";
 import { db, isConfigured } from "../lib/firebase.js";
+import { compressImage } from "../lib/image.js";
 import { DEFAULT_COLOR, DEFAULT_STATUSES, PROJECT_COLORS } from "../constants.js";
+
+// Blob → base64 data URL (для хранения картинок в Firestore).
+const blobToDataUrl = (blob) =>
+  new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
 
 const newId = () => crypto.randomUUID();
 
@@ -22,6 +33,7 @@ const rowToTask = (data) => ({
   num: data.num ?? null,
   created: data.createdAt ? new Date(data.createdAt).toISOString() : null,
   shots: [],
+  shotsLoaded: false,
 });
 
 const rowToProject = (data) => ({
@@ -57,6 +69,9 @@ export function useProjects() {
   const [loadState, setLoadState] = useState(isConfigured ? "loading" : "ready");
   // Увеличение этого счётчика пересоздаёт подписки (retry).
   const [retryKey, setRetryKey] = useState(0);
+  // Кэш скриншотов: taskId → { shots, loaded }. Живёт в рефе, чтобы rebuild()
+  // не сбрасывал уже загруженные скриншоты при каждом обновлении Firestore.
+  const shotsCacheRef = useRef(new Map());
 
   // ── Локальные помощники ─────────────────────────────────────────────────────
   const patchProjectLocal = (id, fn) =>
@@ -93,7 +108,10 @@ export function useProjects() {
           tasks: Array.from(tasksMap.values())
             .filter((t) => t._projectId === p.id)
             .sort((a, b) => (a.order || 0) - (b.order || 0))
-            .map((t) => ({ ...t, shots: [] })),
+            .map((t) => {
+            const cached = shotsCacheRef.current.get(t.id);
+            return { ...t, shots: cached?.shots || [], shotsLoaded: cached?.loaded || false };
+          }),
         }));
       setProjects(assembled);
       setLoadState("ready");
@@ -297,8 +315,9 @@ export function useProjects() {
     const task = {
       id, title: "Новая задача", desc: "", notes: "",
       priority: "med", status, platform: "both", version: build, order, num,
-      created: new Date().toISOString(), shots: [],
+      created: new Date().toISOString(), shots: [], shotsLoaded: true,
     };
+    shotsCacheRef.current.set(id, { shots: [], loaded: true });
     patchProjectLocal(pid, (p) => ({ ...p, tasks: [...p.tasks, task] }));
     run(setDoc(doc(db, "tasks", id), {
       projectId: pid, title: task.title, description: "", notes: "",
@@ -348,11 +367,15 @@ export function useProjects() {
   const deleteTask = (pid, tid) => {
     const victim = projects.find((p) => p.id === pid)?.tasks.find((t) => t.id === tid);
     if (!victim) return;
+    const shotIds = (victim.shots || []).map((s) => s.id);
     patchProjectLocal(pid, (p) => ({ ...p, tasks: p.tasks.filter((t) => t.id !== tid) }));
     run(deleteDoc(doc(db, "tasks", tid)));
+    // Скриншоты из Firestore НЕ удаляем сразу — вдруг Ctrl+Z.
+    // Удаляем в finalize, когда отмена уже невозможна.
     pushUndo({
       label: "удаление задачи",
       undo: async () => {
+        shotsCacheRef.current.set(tid, { shots: victim.shots || [], loaded: true });
         patchProjectLocal(pid, (p) =>
           p.tasks.some((t) => t.id === tid) ? p : { ...p, tasks: [...p.tasks, victim] }
         );
@@ -363,7 +386,13 @@ export function useProjects() {
           sortOrder: victim.order, num: victim.num, createdAt: Date.now(),
         }));
       },
-      finalize: () => {},
+      finalize: () => {
+        if (shotIds.length) {
+          const batch = writeBatch(db);
+          shotIds.forEach((id) => batch.delete(doc(db, "attachments", id)));
+          run(batch.commit());
+        }
+      },
     });
   };
 
@@ -375,12 +404,64 @@ export function useProjects() {
     if (Object.keys(dbPatch).length) run(updateDoc(doc(db, "tasks", tid), dbPatch));
   };
 
-  // Скриншоты: временно отключены (Storage требует платный план Firebase).
-  // Подключим Cloudinary в следующем шаге.
-  const addShots = (_pid, _tid, _files) => {
-    console.warn("[Protoboard] Загрузка скриншотов временно отключена.");
+  // ── Скриншоты (Firestore base64) ────────────────────────────────────────────
+  // Загрузка скриншотов задачи при открытии панели (ленивая, по требованию).
+  const loadShots = useCallback(async (pid, tid) => {
+    if (shotsCacheRef.current.get(tid)?.loaded) return; // уже загружено
+    try {
+      const snap = await getDocs(query(collection(db, "attachments"), where("taskId", "==", tid)));
+      const shots = snap.docs
+        .map((d) => ({ id: d.id, name: d.data().name, url: d.data().data, createdAt: d.data().createdAt || 0 }))
+        .sort((a, b) => a.createdAt - b.createdAt)
+        .map(({ id, name, url }) => ({ id, name, url }));
+      shotsCacheRef.current.set(tid, { shots, loaded: true });
+      patchTaskLocal(pid, tid, (t) => ({ ...t, shots, shotsLoaded: true }));
+    } catch (e) {
+      console.error("[Protoboard] Не удалось загрузить скриншоты:", e.message);
+      shotsCacheRef.current.set(tid, { shots: [], loaded: true });
+      patchTaskLocal(pid, tid, (t) => ({ ...t, shots: [], shotsLoaded: true }));
+    }
+  }, []);
+
+  const addShots = (pid, tid, files) => {
+    files.forEach((file) => {
+      const id = newId();
+      const localUrl = URL.createObjectURL(file);
+      // Мгновенное превью пока идёт сжатие и запись в Firestore.
+      patchTaskLocal(pid, tid, (t) => ({
+        ...t, shots: [...t.shots, { id, name: file.name, url: localUrl, uploading: true }],
+      }));
+      (async () => {
+        try {
+          const { blob } = await compressImage(file);
+          const dataUrl = await blobToDataUrl(blob);
+          await setDoc(doc(db, "attachments", id), {
+            taskId: tid, name: file.name, data: dataUrl, createdAt: Date.now(),
+          });
+          // Обновляем кэш и заменяем временную ссылку на сохранённую.
+          const cached = shotsCacheRef.current.get(tid) || { shots: [], loaded: true };
+          const newShot = { id, name: file.name, url: dataUrl };
+          shotsCacheRef.current.set(tid, {
+            ...cached,
+            shots: [...cached.shots.filter((s) => s.id !== id), newShot],
+          });
+          patchTaskLocal(pid, tid, (t) => ({
+            ...t, shots: t.shots.map((s) => s.id === id ? newShot : s),
+          }));
+        } catch (e) {
+          console.error("[Protoboard] Не удалось загрузить скриншот:", e.message);
+          patchTaskLocal(pid, tid, (t) => ({ ...t, shots: t.shots.filter((s) => s.id !== id) }));
+        }
+      })();
+    });
   };
-  const removeShot = (_pid, _tid, _shotId) => {};
+
+  const removeShot = (pid, tid, shotId) => {
+    patchTaskLocal(pid, tid, (t) => ({ ...t, shots: t.shots.filter((s) => s.id !== shotId) }));
+    const cached = shotsCacheRef.current.get(tid);
+    if (cached) shotsCacheRef.current.set(tid, { ...cached, shots: cached.shots.filter((s) => s.id !== shotId) });
+    run(deleteDoc(doc(db, "attachments", shotId)));
+  };
 
   return {
     projects,
@@ -388,7 +469,7 @@ export function useProjects() {
     createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask,
-    addShots, removeShot,
+    addShots, removeShot, loadShots,
     undo,
   };
 }

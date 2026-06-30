@@ -84,14 +84,20 @@ export default function TaskPanel({ task, statuses, onClose, onEdit, onMoveTask,
           <EditableTextarea className="pb-area" rows={2} value={task.notes} autoGrow placeholder="Устройство, шаги воспроизведения…" onCommit={(v) => onEdit({ notes: v })} />
         </div>
         <div className="pb-field">
-          <label>Скриншоты ({task.shots.length})</label>
+          <label>Скриншоты {task.shotsLoaded ? `(${task.shots.length})` : ""}</label>
           <div className="pb-shots">
-            {task.shots.map((s) => (
-              <div key={s.id} className="pb-shotthumb">
-                <img src={s.url} alt={s.name} title="Открыть в полном размере" onClick={() => setZoom(s)} />
-                <button onClick={() => onRemoveShot(s.id)}>✕</button>
-              </div>
-            ))}
+            {!task.shotsLoaded ? (
+              <div style={{ color: "var(--c-muted)", fontSize: 13, padding: "6px 0" }}>Загрузка…</div>
+            ) : (
+              <>
+                {task.shots.map((s) => (
+                  <div key={s.id} className="pb-shotthumb">
+                    <img src={s.url} alt={s.name} title="Открыть в полном размере" onClick={() => setZoom(s)} />
+                    <button onClick={() => onRemoveShot(s.id)}>✕</button>
+                  </div>
+                ))}
+              </>
+            )}
             <div className="pb-shotadd" onClick={() => fileRef.current?.click()}>+ Добавить скриншот</div>
           </div>
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handleFiles} />
