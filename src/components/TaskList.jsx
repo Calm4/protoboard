@@ -8,7 +8,7 @@ import StatusMenu from "./StatusMenu.jsx";
 // полю; повторный клик по той же колонке меняет порядок групп (▲/▼).
 // Перетаскивание задач работает только в группировке по статусу (там это перенос между
 // колонками); в остальных группировках строки не таскаются — это режим просмотра.
-export default function TaskList({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onSetPriority, onSetPlatform, onOpenTask }) {
+export default function TaskList({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onSetPriority, onSetPlatform, onOpenTask, selectMode, selectedIds = new Set(), onToggleSelect }) {
   const dragId = useRef(null);
   const [dragOver, setDragOver] = useState(null);
   const [dropRow, setDropRow] = useState(null);
@@ -96,15 +96,16 @@ export default function TaskList({ tasks, statuses, statusActions, onMoveTask, o
             return (
               <div
                 key={t.id}
-                className={"pb-row" + (dropRow === t.id ? " dropbefore" : "")}
+                className={"pb-row" + (dropRow === t.id ? " dropbefore" : "") + (selectedIds.has(t.id) ? " selected" : "")}
                 style={{ "--tint": st ? hexToRgba(st.color, 0.1) : "transparent" }}
-                draggable={byStatus}
-                onDragStart={byStatus ? () => { dragId.current = t.id; } : undefined}
+                draggable={byStatus && !selectMode}
+                onDragStart={byStatus && !selectMode ? () => { dragId.current = t.id; } : undefined}
                 onDragEnd={byStatus ? endDrag : undefined}
-                onDragOver={byStatus ? (e) => { if (!dragId.current) return; e.preventDefault(); e.stopPropagation(); setDragOver(t.status); if (dropRow !== t.id) setDropRow(t.id); } : undefined}
-                onDrop={byStatus ? (e) => { e.stopPropagation(); dropOnRow(t); } : undefined}
-                onClick={() => onOpenTask(t.id)}
+                onDragOver={byStatus && !selectMode ? (e) => { if (!dragId.current) return; e.preventDefault(); e.stopPropagation(); setDragOver(t.status); if (dropRow !== t.id) setDropRow(t.id); } : undefined}
+                onDrop={byStatus && !selectMode ? (e) => { e.stopPropagation(); dropOnRow(t); } : undefined}
+                onClick={() => selectMode ? onToggleSelect(t.id) : onOpenTask(t.id)}
               >
+                {selectMode && <span className={"pb-check" + (selectedIds.has(t.id) ? " on" : "")} />}
                 <div className="pb-rowtitle">
                   {t.num != null && <span className="pb-num">#{t.num}</span>}
                   <b>{t.title}</b>

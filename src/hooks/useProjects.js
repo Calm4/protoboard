@@ -33,6 +33,8 @@ const rowToTask = (data) => ({
   num: data.num ?? null,
   created: data.createdAt ? new Date(data.createdAt).toISOString() : null,
   tags: Array.isArray(data.tags) ? data.tags : [],
+  dueDate: data.dueDate || "",
+  assignee: data.assignee || "",
   shots: [],
   shotsLoaded: false,
   activity: [],
@@ -62,6 +64,8 @@ const taskFieldsToDb = (patch) => {
   if ("platform" in patch) out.platform = patch.platform;
   if ("version" in patch) out.version = patch.version;
   if ("order" in patch) out.sortOrder = patch.order;
+  if ("dueDate" in patch) out.dueDate = patch.dueDate;
+  if ("assignee" in patch) out.assignee = patch.assignee;
   return out;
 };
 
@@ -336,7 +340,7 @@ export function useProjects() {
     run(setDoc(doc(db, "tasks", id), {
       projectId: pid, title: task.title, description: "", notes: "",
       priority: "med", status, platform: "both", version: build,
-      sortOrder: order, num, tags: [], createdAt: Date.now(),
+      sortOrder: order, num, tags: [], dueDate: "", assignee: "", createdAt: Date.now(),
     }));
     logActivity(pid, id, "Задача создана");
     pushUndo({
@@ -423,6 +427,26 @@ export function useProjects() {
       const lbl = { high: "Высокий", med: "Средний", low: "Низкий" }[patch.priority] || patch.priority;
       logActivity(pid, tid, `Приоритет → ${lbl}`);
     }
+  };
+
+  // ── Удаление проекта (со всеми задачами, вложениями, логами) ────────────────
+  const deleteProject = async (pid) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj) return;
+    setProjects((ps) => ps.filter((p) => p.id !== pid));
+    const taskIds = proj.tasks.map((t) => t.id);
+    await Promise.all(taskIds.map(async (tid) => {
+      const [aSnap, actSnap] = await Promise.all([
+        getDocs(query(collection(db, "attachments"), where("taskId", "==", tid))),
+        getDocs(query(collection(db, "activity"), where("taskId", "==", tid))),
+      ]);
+      await Promise.all([
+        ...aSnap.docs.map((d) => deleteDoc(d.ref)),
+        ...actSnap.docs.map((d) => deleteDoc(d.ref)),
+      ]);
+    }));
+    await Promise.all(taskIds.map((tid) => deleteDoc(doc(db, "tasks", tid))));
+    await deleteDoc(doc(db, "projects", pid));
   };
 
   // ── Лог изменений ───────────────────────────────────────────────────────────
@@ -572,6 +596,7 @@ export function useProjects() {
     addShots, removeShot, loadShots,
     addTag, removeTag, removeProjectTag,
     loadActivity,
+    deleteProject,
     undo,
   };
 }

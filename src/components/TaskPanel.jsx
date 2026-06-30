@@ -97,6 +97,19 @@ export default function TaskPanel({
           <label>Версия (билд)</label>
           <EditableInput className="pb-input mono" value={task.version} placeholder="v0.4" onCommit={(v) => onEdit({ version: v })} />
         </div>
+        <div className="pb-field">
+          <label>Исполнитель</label>
+          <EditableInput className="pb-input" value={task.assignee || ""} placeholder="Имя…" onCommit={(v) => onEdit({ assignee: v })} />
+        </div>
+        <div className="pb-field">
+          <label>Дедлайн</label>
+          <input
+            type="date"
+            className={"pb-select" + (task.dueDate && new Date(task.dueDate) < new Date() ? " overdue-input" : "")}
+            value={task.dueDate || ""}
+            onChange={(e) => onEdit({ dueDate: e.target.value })}
+          />
+        </div>
 
         {/* Теги */}
         <div className="pb-field">

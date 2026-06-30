@@ -7,6 +7,7 @@ import ProjectGrid from "./components/ProjectGrid.jsx";
 import ProjectView from "./components/ProjectView.jsx";
 import TaskPanel from "./components/TaskPanel.jsx";
 import NewProjectModal from "./components/NewProjectModal.jsx";
+import DeleteProjectModal from "./components/DeleteProjectModal.jsx";
 import LoginScreen from "./components/LoginScreen.jsx";
 
 // Главный компонент. Держит «состояние интерфейса» (что открыто, какой вид,
@@ -21,18 +22,27 @@ export default function Protoboard() {
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot, loadShots,
     addTag, removeTag, removeProjectTag, loadActivity,
+    deleteProject,
     undo,
   } = useProjects();
 
   // Состояние интерфейса.
-  const [openId, setOpenId] = useState(null);       // открытый проект
-  const [view, setView] = useState("board");        // "board" | "list"
-  const [taskId, setTaskId] = useState(null);       // открытая задача (панель)
+  const [openId, setOpenId] = useState(null);
+  const [view, setView] = useState("board");
+  const [taskId, setTaskId] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [newProj, setNewProj] = useState(null); // null = модалка закрыта; иначе { name, color }
-  const [filters, setFilters] = useState(EMPTY_FILTERS); // см. constants.EMPTY_FILTERS
+  const [newProj, setNewProj] = useState(null);
+  const [deletingProjId, setDeletingProjId] = useState(null);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [search, setSearch] = useState("");
-  const [toast, setToast] = useState(null); // короткое уведомление внизу экрана
+  const [toast, setToast] = useState(null);
+  const [dark, setDark] = useState(() => localStorage.getItem("pb-dark") === "1");
+
+  const toggleDark = () => setDark((d) => {
+    const next = !d;
+    localStorage.setItem("pb-dark", next ? "1" : "0");
+    return next;
+  });
 
   // Производные значения.
   const project = projects.find((p) => p.id === openId) || null;
@@ -194,19 +204,28 @@ export default function Protoboard() {
   );
 
   return (
-    <div className="pb">
+    <div className={"pb" + (dark ? " dark" : "")}>
       <style>{css}</style>
       <div className="pb-wrap">
         {!project ? (
           <ProjectGrid
             active={active}
             archived={archived}
+            allProjects={projects}
             showArchived={showArchived}
             onToggleArchived={() => setShowArchived((s) => !s)}
             onOpen={openProject}
             onArchive={(id) => setArchived(id, true)}
             onUnarchive={(id) => setArchived(id, false)}
             onNewProject={() => setNewProj({ name: "", color: DEFAULT_COLOR })}
+            onOpenTask={(pid, tid) => {
+              openProject(pid);
+              setTaskId(tid);
+              loadShots(pid, tid);
+              loadActivity(pid, tid);
+            }}
+            isDark={dark}
+            onToggleDark={toggleDark}
           />
         ) : (
           <ProjectView
@@ -240,6 +259,8 @@ export default function Protoboard() {
               remove: (sid) => deleteStatus(openId, sid),
             }}
             onRemoveProjectTag={(tag) => removeProjectTag(openId, tag)}
+            onDeleteProject={() => setDeletingProjId(openId)}
+            onDeleteTask={(tid) => { deleteTask(openId, tid); if (taskId === tid) setTaskId(null); }}
           />
         )}
       </div>
@@ -258,6 +279,21 @@ export default function Protoboard() {
           onAddTag={(tag) => addTag(openId, taskId, tag)}
           onRemoveTag={(tag) => removeTag(openId, taskId, tag)}
           availableTags={[...new Set([...GLOBAL_TAGS, ...(project?.customTags || [])])]}
+        />
+      )}
+
+      {/* Удаление проекта */}
+      {deletingProjId && (
+        <DeleteProjectModal
+          projectName={projects.find((p) => p.id === deletingProjId)?.name || ""}
+          onClose={() => setDeletingProjId(null)}
+          onConfirm={() => {
+            const pid = deletingProjId;
+            setDeletingProjId(null);
+            setOpenId(null);
+            setTaskId(null);
+            deleteProject(pid);
+          }}
         />
       )}
 

@@ -1,22 +1,121 @@
-// Главный экран: список активных проектов карточками + сворачиваемый архив.
+import { useState, useMemo } from "react";
+
+// Главный экран: статистика, глобальный поиск, список проектов, архив.
 export default function ProjectGrid({
-  active, archived, showArchived, onToggleArchived,
-  onOpen, onArchive, onUnarchive, onNewProject,
+  active, archived, allProjects, showArchived, onToggleArchived,
+  onOpen, onArchive, onUnarchive, onNewProject, onOpenTask, isDark, onToggleDark,
 }) {
+  const [gSearch, setGSearch] = useState("");
+  const [gOpen, setGOpen] = useState(false);
+
+  // Общая статистика по всем проектам
+  const globalStats = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let total = 0, open = 0, week = 0;
+    allProjects.forEach((p) => {
+      p.tasks.forEach((t) => {
+        total++;
+        // «открытая» — не последний статус
+        const last = p.statuses[p.statuses.length - 1];
+        if (!last || t.status !== last.id) open++;
+        if (t.created && new Date(t.created).getTime() >= weekAgo) week++;
+      });
+    });
+    return { total, open, week, projects: allProjects.length };
+  }, [allProjects]);
+
+  // Результаты глобального поиска
+  const searchResults = useMemo(() => {
+    const q = gSearch.trim().toLowerCase();
+    if (!q) return [];
+    const results = [];
+    allProjects.forEach((p) => {
+      p.tasks.forEach((t) => {
+        if ((t.title || "").toLowerCase().includes(q)) {
+          results.push({ projectId: p.id, projectName: p.name, projectColor: p.color, task: t });
+        }
+      });
+    });
+    return results.slice(0, 24);
+  }, [gSearch, allProjects]);
+
+  const handleResultClick = (pid, tid) => {
+    setGSearch("");
+    setGOpen(false);
+    onOpenTask(pid, tid);
+  };
+
   return (
     <>
       <div className="pb-top">
         <div className="pb-brand">
           <span className="pb-logo">Proto<b>board</b></span>
         </div>
-        <button className="pb-btn primary" onClick={onNewProject}>+ Новый проект</button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button className="pb-btn ghost sm pb-darktoggle" title="Сменить тему" onClick={onToggleDark}>
+            {isDark ? "☀" : "☾"}
+          </button>
+          <button className="pb-btn primary" onClick={onNewProject}>+ Новый проект</button>
+        </div>
       </div>
-      <p className="pb-sub">Трекер задач и багов по прототипам мобильных игр. Каждый проект — отдельный прототип в разработке.</p>
+
+      {/* Глобальный поиск */}
+      <div className="pb-gsearch-wrap">
+        <div className="pb-search" style={{ width: "100%", maxWidth: 460 }}>
+          <span className="pb-search-ic">⌕</span>
+          <input
+            type="text"
+            placeholder="Поиск по всем проектам…"
+            value={gSearch}
+            onChange={(e) => { setGSearch(e.target.value); setGOpen(true); }}
+            onFocus={() => setGOpen(true)}
+            onKeyDown={(e) => { if (e.key === "Escape") { setGSearch(""); setGOpen(false); } }}
+          />
+          {gSearch && <button className="pb-search-x" onClick={() => { setGSearch(""); setGOpen(false); }}>✕</button>}
+        </div>
+        {gOpen && gSearch.trim() && (
+          <>
+            <div className="pb-tagscrim" onMouseDown={() => setGOpen(false)} />
+            <div className="pb-gsresults">
+              {searchResults.length === 0 ? (
+                <div className="pb-gsempty">Ничего не найдено</div>
+              ) : (
+                searchResults.map(({ projectId, projectName, projectColor, task }) => (
+                  <button
+                    key={task.id}
+                    className="pb-gsrow"
+                    onMouseDown={() => handleResultClick(projectId, task.id)}
+                  >
+                    <span className="pb-gsdot" style={{ background: projectColor }} />
+                    <span className="pb-gsproject">{projectName}</span>
+                    <span className="pb-gsarrow">›</span>
+                    <span className="pb-gstitle">{task.title}</span>
+                    {task.num != null && <span className="pb-num" style={{ marginLeft: "auto" }}>#{task.num}</span>}
+                  </button>
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Общая статистика */}
+      {globalStats.total > 0 && (
+        <div className="pb-globalstats">
+          <span><b>{globalStats.projects}</b> проектов</span>
+          <span className="pb-gs-sep">·</span>
+          <span><b>{globalStats.total}</b> задач</span>
+          <span className="pb-gs-sep">·</span>
+          <span><b>{globalStats.open}</b> открытых</span>
+          <span className="pb-gs-sep">·</span>
+          <span><b>+{globalStats.week}</b> за неделю</span>
+        </div>
+      )}
 
       <div className="pb-grid">
         {active.map((p) => {
           const total = p.tasks.length;
-          const done = p.tasks.filter((t) => t.status === "done").length;
+          const done = p.tasks.filter((t) => t.status === p.statuses[p.statuses.length - 1]?.id).length;
           const pct = total ? Math.round((done / total) * 100) : 0;
           return (
             <div key={p.id} className="pb-proj" onClick={() => onOpen(p.id)}>

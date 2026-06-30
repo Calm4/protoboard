@@ -8,12 +8,16 @@ import { PRIORITIES, GLOBAL_TAGS } from "../constants.js";
 
 export default function ProjectView({
   project, view, onSetView, filters, onSetFilter, onResetFilters,
-  visibleTasks, search, onSearch, onBack, onSetName, onSetColor, onSetBuild, onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform, onOpenTask, statusActions,
-  onRemoveProjectTag,
+  visibleTasks, search, onSearch, onBack, onSetName, onSetColor, onSetBuild,
+  onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform,
+  onOpenTask, statusActions, onRemoveProjectTag,
+  onDeleteProject, onDeleteTask,
 }) {
   const statuses = project.statuses;
   const [palette, setPalette] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   const f = filters;
   const versions = [...new Set(project.tasks.map((t) => t.version).filter(Boolean))]
@@ -31,16 +35,36 @@ export default function ProjectView({
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const setPreset = (days) => {
     if (days == null) { onSetFilter("dateFrom", ""); onSetFilter("dateTo", ""); return; }
-    const to = new Date();
-    const from = new Date();
+    const to = new Date(); const from = new Date();
     from.setDate(from.getDate() - (days - 1));
-    onSetFilter("dateFrom", toYmd(from));
-    onSetFilter("dateTo", toYmd(to));
+    onSetFilter("dateFrom", toYmd(from)); onSetFilter("dateTo", toYmd(to));
   };
-
   const toggleTagFilter = (tag) => {
     const cur = f.tags || [];
     onSetFilter("tags", cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag]);
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const exitSelect = () => { setSelectMode(false); setSelectedIds(new Set()); };
+
+  const bulkMoveStatus = (statusId) => {
+    selectedIds.forEach((tid) => onMoveTask(tid, statusId));
+    exitSelect();
+  };
+  const bulkSetPriority = (priority) => {
+    selectedIds.forEach((tid) => onSetPriority(tid, priority));
+    exitSelect();
+  };
+  const bulkDelete = () => {
+    if (!window.confirm(`Удалить ${selectedIds.size} задач?`)) return;
+    selectedIds.forEach((tid) => onDeleteTask(tid));
+    exitSelect();
   };
 
   return (
@@ -49,12 +73,7 @@ export default function ProjectView({
       <div className="pb-phead">
         <div className="pb-ptitle">
           <div className="pb-colorwrap">
-            <button
-              className="pb-colordot"
-              style={{ background: project.color }}
-              title="Цвет проекта"
-              onClick={() => setPalette((o) => !o)}
-            />
+            <button className="pb-colordot" style={{ background: project.color }} title="Цвет проекта" onClick={() => setPalette((o) => !o)} />
             {palette && (
               <>
                 <div className="pb-colorscrim" onClick={() => setPalette(false)} />
@@ -64,31 +83,15 @@ export default function ProjectView({
               </>
             )}
           </div>
-          <EditableInput
-            className="pb-nameedit"
-            value={project.name}
-            autoSize
-            title="Название проекта — Enter, чтобы сохранить"
-            onCommit={onSetName}
-          />
-          <EditableInput
-            className="pb-buildedit"
-            value={project.build}
-            title="Версия проекта — Enter, чтобы сохранить"
-            onCommit={onSetBuild}
-          />
+          <EditableInput className="pb-nameedit" value={project.name} autoSize title="Название проекта" onCommit={onSetName} />
+          <EditableInput className="pb-buildedit" value={project.build} title="Версия проекта" onCommit={onSetBuild} />
         </div>
         <div className="pb-controls">
           {view !== "stats" && (
             <div className="pb-search">
               <span className="pb-search-ic">⌕</span>
-              <input
-                type="text"
-                placeholder="Поиск задач…"
-                value={search}
-                onChange={(e) => onSearch(e.target.value)}
-              />
-              {search && <button className="pb-search-x" title="Очистить" onClick={() => onSearch("")}>✕</button>}
+              <input type="text" placeholder="Поиск задач…" value={search} onChange={(e) => onSearch(e.target.value)} />
+              {search && <button className="pb-search-x" onClick={() => onSearch("")}>✕</button>}
             </div>
           )}
           <div className="pb-switch">
@@ -96,6 +99,14 @@ export default function ProjectView({
             <button className={view === "board" ? "on" : ""} onClick={() => onSetView("board")}>Доска</button>
             <button className={view === "list" ? "on" : ""} onClick={() => onSetView("list")}>Список</button>
           </div>
+          {view !== "stats" && (
+            <button
+              className={"pb-btn sm" + (selectMode ? " primary" : " ghost")}
+              onClick={() => { if (selectMode) exitSelect(); else setSelectMode(true); }}
+            >
+              {selectMode ? "Готово" : "Выбрать"}
+            </button>
+          )}
           <button className="pb-btn primary" onClick={() => { if (view === "stats") onSetView("board"); onAddTask(statuses[0]?.id); }}>+ Задача</button>
         </div>
       </div>
@@ -103,11 +114,7 @@ export default function ProjectView({
       {view !== "stats" && (
         <div className="pb-filterbar">
           <div className="pb-filterwrap">
-            <button
-              className={"pb-btn sm" + (activeCount ? " primary" : "")}
-              onClick={() => setFiltersOpen((o) => !o)}
-              title="Фильтры задач"
-            >
+            <button className={"pb-btn sm" + (activeCount ? " primary" : "")} onClick={() => setFiltersOpen((o) => !o)}>
               ⚙ Фильтры{activeCount ? ` · ${activeCount}` : ""}
             </button>
             {filtersOpen && (
@@ -117,9 +124,11 @@ export default function ProjectView({
                   <div className="pb-frow">
                     <span className="lbl">Платформа</span>
                     <div className="pb-chips">
-                      <button className={"pb-chip" + (f.platform === "all" ? " on" : "")} onClick={() => onSetFilter("platform", "all")}>Все</button>
-                      <button className={"pb-chip" + (f.platform === "ios" ? " on" : "")} onClick={() => onSetFilter("platform", "ios")}>iOS</button>
-                      <button className={"pb-chip" + (f.platform === "android" ? " on" : "")} onClick={() => onSetFilter("platform", "android")}>Android</button>
+                      {["all", "ios", "android"].map((v) => (
+                        <button key={v} className={"pb-chip" + (f.platform === v ? " on" : "")} onClick={() => onSetFilter("platform", v)}>
+                          {v === "all" ? "Все" : v === "ios" ? "iOS" : "Android"}
+                        </button>
+                      ))}
                     </div>
                   </div>
                   <div className="pb-frow">
@@ -148,26 +157,13 @@ export default function ProjectView({
                     <span className="lbl">Теги</span>
                     <div className="pb-chips wrap">
                       {allTags.map((tag) => (
-                        <button
-                          key={tag}
-                          className={"pb-chip" + ((f.tags || []).includes(tag) ? " on" : "")}
-                          onClick={() => toggleTagFilter(tag)}
-                        >
-                          {tag}
-                        </button>
+                        <button key={tag} className={"pb-chip" + ((f.tags || []).includes(tag) ? " on" : "")} onClick={() => toggleTagFilter(tag)}>{tag}</button>
                       ))}
                     </div>
                   </div>
                   <div className="pb-frow">
                     <span className="lbl">№ задачи</span>
-                    <input
-                      className="pb-fnum"
-                      type="number"
-                      min="1"
-                      placeholder="напр. 12"
-                      value={f.num}
-                      onChange={(e) => onSetFilter("num", e.target.value)}
-                    />
+                    <input className="pb-fnum" type="number" min="1" placeholder="напр. 12" value={f.num} onChange={(e) => onSetFilter("num", e.target.value)} />
                   </div>
                   <div className="pb-frow col">
                     <span className="lbl">Дата создания</span>
@@ -206,6 +202,9 @@ export default function ProjectView({
           onReorderTask={onReorderTask}
           onOpenTask={onOpenTask}
           onAddTask={onAddTask}
+          selectMode={selectMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
         />
       ) : (
         <TaskList
@@ -217,8 +216,33 @@ export default function ProjectView({
           onSetPriority={onSetPriority}
           onSetPlatform={onSetPlatform}
           onOpenTask={onOpenTask}
+          selectMode={selectMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
         />
       )}
+
+      {/* Bulk action bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="pb-bulkbar">
+          <span className="pb-bulk-cnt">Выбрано: {selectedIds.size}</span>
+          <select className="pb-select sm" defaultValue="" onChange={(e) => { if (e.target.value) bulkMoveStatus(e.target.value); }}>
+            <option value="">Статус →</option>
+            {statuses.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          <select className="pb-select sm" defaultValue="" onChange={(e) => { if (e.target.value) bulkSetPriority(e.target.value); }}>
+            <option value="">Приоритет →</option>
+            {PRIORITIES.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </select>
+          <button className="pb-btn danger sm" onClick={bulkDelete}>Удалить</button>
+          <button className="pb-btn ghost sm" onClick={exitSelect}>Отмена</button>
+        </div>
+      )}
+
+      {/* Удаление проекта */}
+      <div className="pb-danger-zone">
+        <button className="pb-deleteprojbtn" onClick={onDeleteProject}>Удалить проект…</button>
+      </div>
     </>
   );
 }
