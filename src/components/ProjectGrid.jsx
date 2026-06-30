@@ -1,5 +1,15 @@
 import { useState, useMemo } from "react";
 
+const isHoldStatus = (label) => {
+  const l = (label || "").toLowerCase();
+  return (
+    l.includes("hold") || l.includes("not fix") || l.includes("no fix") ||
+    l.includes("won't fix") || l.includes("wontfix") || l.includes("not in build") ||
+    l.includes("заморожен") || l.includes("отложен") || l.includes("на удержании") ||
+    l.includes("не фикс") || l.includes("не в билде")
+  );
+};
+
 // Главный экран: статистика, глобальный поиск, список проектов, архив.
 export default function ProjectGrid({
   active, archived, allProjects, showArchived, onToggleArchived,
@@ -13,11 +23,11 @@ export default function ProjectGrid({
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     let total = 0, open = 0, week = 0;
     allProjects.forEach((p) => {
+      const lastId = p.statuses[p.statuses.length - 1]?.id;
+      const holdIds = new Set(p.statuses.filter((s) => isHoldStatus(s.label)).map((s) => s.id));
       p.tasks.forEach((t) => {
         total++;
-        // «открытая» — не последний статус
-        const last = p.statuses[p.statuses.length - 1];
-        if (!last || t.status !== last.id) open++;
+        if (t.status !== lastId && !holdIds.has(t.status)) open++;
         if (t.created && new Date(t.created).getTime() >= weekAgo) week++;
       });
     });

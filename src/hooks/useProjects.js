@@ -35,6 +35,7 @@ const rowToTask = (data) => ({
   tags: Array.isArray(data.tags) ? data.tags : [],
   dueDate: data.dueDate || "",
   assignee: data.assignee || "",
+  completedAt: data.completedAt || null,
   shots: [],
   shotsLoaded: false,
   activity: [],
@@ -66,6 +67,7 @@ const taskFieldsToDb = (patch) => {
   if ("order" in patch) out.sortOrder = patch.order;
   if ("dueDate" in patch) out.dueDate = patch.dueDate;
   if ("assignee" in patch) out.assignee = patch.assignee;
+  if ("completedAt" in patch) out.completedAt = patch.completedAt;
   return out;
 };
 
@@ -357,9 +359,11 @@ export function useProjects() {
     const proj = projects.find((p) => p.id === pid);
     const order = nextOrder(proj);
     const t = proj?.tasks.find((x) => x.id === tid);
-    if (t) pushUndo({ label: "перемещение задачи", undo: undoTaskFields(pid, tid, { status: t.status, order: t.order }) });
-    patchTaskLocal(pid, tid, (t) => ({ ...t, status, order }));
-    run(updateDoc(doc(db, "tasks", tid), { status, sortOrder: order }));
+    if (t) pushUndo({ label: "перемещение задачи", undo: undoTaskFields(pid, tid, { status: t.status, order: t.order, completedAt: t.completedAt }) });
+    const isDoneStatus = proj?.statuses[proj.statuses.length - 1]?.id === status;
+    const completedAt = isDoneStatus ? Date.now() : null;
+    patchTaskLocal(pid, tid, (t) => ({ ...t, status, order, completedAt }));
+    run(updateDoc(doc(db, "tasks", tid), { status, sortOrder: order, completedAt }));
     const label = proj?.statuses.find((s) => s.id === status)?.label || status;
     logActivity(pid, tid, `Статус → ${label}`);
   };

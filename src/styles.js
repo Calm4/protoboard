@@ -344,7 +344,10 @@ export const css = `
 .pb-stat-pdot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .pb-stat-plbl{ font-size:13px; color:var(--text); flex:1; }
 .pb-stat-pcount{ font-size:13px; font-weight:600; color:var(--text); }
-.pb-sparkline{ width:100%; height:52px; display:block; margin-top:4px; }
+.pb-sparkline{ width:100%; height:64px; display:block; margin-top:4px; }
+.pb-stat-head-legend{ display:flex; align-items:center; gap:14px; }
+.pb-stat-leg{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--c-muted); text-transform:none; letter-spacing:0; font-weight:500; }
+.pb-stat-leg .dot{ width:8px; height:8px; border-radius:2px; flex-shrink:0; }
 
 /* ── Теги ────────────────────────────────────────────────────────────────── */
 .pb-tagrow{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; position:relative; }
