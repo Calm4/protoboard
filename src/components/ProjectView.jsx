@@ -92,12 +92,15 @@ export default function ProjectView({
             <button className={view === "list" ? "on" : ""} onClick={() => onSetView("list")}>Список</button>
           </div>
           {view !== "stats" && (
-            <button
-              className={"pb-btn sm" + (selectMode ? " primary" : " ghost")}
-              onClick={() => { if (selectMode) exitSelect(); else setSelectMode(true); }}
-            >
-              {selectMode ? "Готово" : "Выбрать"}
-            </button>
+            <>
+              <div className="pb-controls-sep" />
+              <button
+                className={"pb-btn sm" + (selectMode ? " primary" : " ghost")}
+                onClick={() => { if (selectMode) exitSelect(); else setSelectMode(true); }}
+              >
+                {selectMode ? "Готово" : "Выбрать"}
+              </button>
+            </>
           )}
           <button className="pb-btn primary" onClick={() => { if (view === "stats") onSetView("board"); onAddTask(statuses[0]?.id); }}>+ Задача</button>
         </div>

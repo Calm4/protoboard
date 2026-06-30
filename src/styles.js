@@ -67,13 +67,14 @@ export const css = `
 .pb-phead { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
 .pb-ptitle { display:flex; align-items:center; gap:11px; }
 .pb-ptitle h1 { font-family:'Space Grotesk'; font-weight:700; font-size:26px; margin:0; letter-spacing:-.02em; }
-.pb-buildedit { font-family:'Space Mono'; font-size:12px; color:var(--accent); background:var(--accent-soft); border:1px solid transparent; padding:4px 8px; border-radius:6px; width:96px; cursor:text; }
+.pb-buildedit { font-family:'Space Mono'; font-size:13px; color:var(--accent); background:var(--accent-soft); border:1px solid transparent; padding:7px 12px; border-radius:8px; min-width:80px; max-width:120px; cursor:text; }
 .pb-buildedit:hover { border-color:var(--accent); }
 .pb-buildedit:focus { outline:none; border-color:var(--accent); background:#fff; }
 .pb-switch { display:inline-flex; background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
 .pb-switch button { border:none; background:transparent; font-family:'Inter'; font-weight:600; font-size:13px; color:var(--soft); padding:7px 14px; border-radius:7px; cursor:pointer; }
 .pb-switch button.on { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(20,22,31,.10); }
 .pb-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.pb-controls-sep { width:1px; height:22px; background:var(--line); flex-shrink:0; }
 .pb-search { display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:0 8px; height:36px; }
 .pb-search:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
 .pb-search-ic { color:var(--soft); font-size:16px; line-height:1; }
@@ -339,17 +340,20 @@ export const css = `
 .pb-proj:hover .pb-grad-btn { opacity:1; }
 .pb-grad-btn:hover { opacity:1!important; }
 
-/* Попап выбора градиента */
-.pb-gradpop { position:absolute; top:36px; right:8px; z-index:210; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; box-shadow:0 8px 26px rgba(0,0,0,.16); display:grid; grid-template-columns:repeat(4,28px); gap:6px; }
+/* Попап выбора градиента — fixed, вне карточки, чтобы overflow:hidden не резал */
+.pb-gradpop { position:fixed; z-index:410; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; box-shadow:0 8px 26px rgba(0,0,0,.16); display:grid; grid-template-columns:repeat(4,28px); gap:6px; }
 .pb-gradswatch { width:28px; height:28px; border-radius:7px; border:2px solid transparent; cursor:pointer; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--c-muted); transition:transform .1s; }
 .pb-gradswatch:hover { transform:scale(1.15); }
 .pb-gradswatch.on { border-color:var(--ink); }
-.pb-fullscrim { position:fixed; inset:0; z-index:200; }
+.pb-grad-btn.open { opacity:1!important; }
+.pb-fullscrim { position:fixed; inset:0; z-index:400; }
 
 /* Кнопки на архивных карточках */
 .pb-arch-actions { position:absolute; top:10px; right:10px; display:flex; gap:5px; opacity:0; transition:opacity .12s; }
 .pb-proj:hover .pb-arch-actions { opacity:1; }
 .pb-arch-btn.static { background:var(--surface2); color:var(--soft); border:none; font-size:11px; padding:4px 8px; border-radius:7px; cursor:pointer; }
+/* Кнопка внутри pb-arch-actions — статичный flex-элемент, не абсолютный */
+.pb-arch-actions .pb-arch-btn { position:static!important; opacity:1!important; top:auto; right:auto; }
 .pb-arch-del { background:rgba(178,54,54,.1); color:#B23636; border:none; font-size:11px; padding:4px 8px; border-radius:7px; cursor:pointer; font-family:'Inter'; }
 .pb-arch-del:hover { background:rgba(178,54,54,.2); }
 
