@@ -62,8 +62,6 @@ export const css = `
 .pb-sectionhead .rule { flex:1; height:1px; background:var(--line); }
 
 /* project view */
-.pb-back { display:inline-flex; align-items:center; gap:7px; color:var(--soft); cursor:pointer; font-size:13px; font-weight:500; margin-bottom:14px; }
-.pb-back:hover { color:var(--ink); }
 .pb-phead { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
 .pb-ptitle { display:flex; align-items:center; gap:11px; }
 .pb-ptitle h1 { font-family:'Space Grotesk'; font-weight:700; font-size:26px; margin:0; letter-spacing:-.02em; }
@@ -369,6 +367,25 @@ export const css = `
 .pb-modal .pb-input { width:100%; margin-bottom:16px; }
 .pb-modal-foot { display:flex; justify-content:flex-end; gap:10px; }
 
+/* ── Шапка: тема + профиль (общие для главной и экрана проекта) ─────────── */
+.pb-headctrls { display:flex; align-items:center; gap:8px; }
+.pb-usermenu-btn { display:flex; align-items:center; gap:7px; padding:4px 8px 4px 4px; border-radius:8px; border:1.5px solid var(--line); background:var(--surface); cursor:pointer; color:var(--text); font-size:13.5px; font-weight:500; }
+.pb-usermenu-btn:hover { background:var(--hover); }
+.pb-usermenu-avatar { width:24px; height:24px; border-radius:50%; display:block; }
+.pb-usermenu-avatar.fallback { background:var(--accent); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.pb-projectbrand { cursor:pointer; }
+.pb-back-arrow { color:var(--soft); font-size:16px; }
+.pb-projectbrand:hover .pb-back-arrow, .pb-projectbrand:hover .pb-logo { color:var(--accent); }
+
+/* ── Профиль (модал) ──────────────────────────────────────────────────────── */
+.pb-profile-head { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.pb-profile-avatar { width:56px; height:56px; border-radius:50%; display:block; flex-shrink:0; }
+.pb-profile-avatar.fallback { background:var(--accent); color:#fff; font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.pb-profile-name { font-family:'Space Grotesk'; font-size:17px; font-weight:700; color:var(--text); }
+.pb-profile-email { font-size:13px; color:var(--c-muted); margin-top:2px; }
+.pb-rolechip { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; background:var(--surface2); color:var(--soft); margin-bottom:20px; }
+.pb-rolechip.admin { background:rgba(178,54,54,.12); color:#B23636; }
+
 /* ── Кнопка «выполнено» (Asana-style checkbox) ───────────────────────────── */
 .pb-closebtn { width:17px; height:17px; border-radius:50%; border:2px solid var(--line); background:transparent; cursor:pointer; flex-shrink:0; padding:0; position:relative; transition:border-color .12s, background .12s; margin-top:1px; }
 .pb-closebtn:hover { border-color:var(--done); }
@@ -439,6 +456,7 @@ export const css = `
 .pb-act-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); }
 .pb-act-row:last-child{ border-bottom:none; }
 .pb-act-action{ font-size:12px; color:var(--text); }
+.pb-act-author{ color:var(--c-muted); }
 .pb-act-time{ font-size:11px; color:var(--c-muted); flex-shrink:0; margin-left:8px; }
 .pb-act-row.muted{ color:var(--c-muted); font-size:12px; }
 

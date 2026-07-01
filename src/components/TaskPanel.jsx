@@ -199,7 +199,10 @@ export default function TaskPanel({
                 <div className="pb-act-row muted">Нет записей</div>
               ) : (task.activity || []).map((e) => (
                 <div key={e.id} className="pb-act-row">
-                  <span className="pb-act-action">{e.action}</span>
+                  <span className="pb-act-action">
+                    {e.action}
+                    {e.authorName && <span className="pb-act-author"> — {e.authorName}</span>}
+                  </span>
                   <span className="pb-act-time">{relTime(e.timestamp)}</span>
                 </div>
               ))}

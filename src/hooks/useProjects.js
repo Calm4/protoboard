@@ -77,7 +77,7 @@ const taskFieldsToDb = (patch) => {
 const pick = (obj, keys) =>
   keys.reduce((o, k) => (obj && k in obj ? ((o[k] = obj[k]), o) : o), {});
 
-export function useProjects(enabled = true) {
+export function useProjects(enabled = true, currentUser = null) {
   const [projects, setProjects] = useState([]);
   const [loadState, setLoadState] = useState(isConfigured ? "loading" : "ready");
   // Увеличение этого счётчика пересоздаёт подписки (retry).
@@ -464,7 +464,8 @@ export function useProjects(enabled = true) {
 
   // ── Лог изменений ───────────────────────────────────────────────────────────
   const logActivity = (pid, tid, action) => {
-    run(setDoc(doc(db, "activity", newId()), { projectId: pid, taskId: tid, action, timestamp: Date.now() }));
+    const authorName = currentUser?.displayName || currentUser?.email || null;
+    run(setDoc(doc(db, "activity", newId()), { projectId: pid, taskId: tid, action, authorName, timestamp: Date.now() }));
   };
 
   const loadActivity = useCallback(async (pid, tid) => {
@@ -472,7 +473,7 @@ export function useProjects(enabled = true) {
     try {
       const snap = await getDocs(query(collection(db, "activity"), where("taskId", "==", tid)));
       const entries = snap.docs
-        .map((d) => ({ id: d.id, action: d.data().action, timestamp: d.data().timestamp || 0 }))
+        .map((d) => ({ id: d.id, action: d.data().action, authorName: d.data().authorName || null, timestamp: d.data().timestamp || 0 }))
         .sort((a, b) => b.timestamp - a.timestamp)
         .slice(0, 50);
       activityCacheRef.current.set(tid, { entries, loaded: true });

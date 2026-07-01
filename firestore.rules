@@ -1,0 +1,52 @@
+rules_version = '2';
+
+// Protoboard — правила доступа к Firestore.
+// Модель: любой вошедший через Google может создавать/архивировать проекты,
+// управлять статусами и работать с задачами. Только удаление проекта — admin-only
+// (необратимое действие). Роль хранится в документе users/{uid}.role ("admin" | "user").
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Профили пользователей. Каждый создаёт/обновляет свой профиль при входе,
+    // но менять себе роль не может — только admin может менять роли (свою и чужие).
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.role == 'user';
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId
+          && request.resource.data.role == resource.data.role)
+        || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Проекты. Создавать, архивировать, менять статусы/имя/цвет и т.д. может
+    // любой вошедший. Удаление — необратимо, поэтому только admin.
+    match /projects/{projectId} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Задачи, скриншоты, история — рабочие данные, доступны любому вошедшему.
+    match /tasks/{taskId} {
+      allow read, write: if isSignedIn();
+    }
+    match /attachments/{attachmentId} {
+      allow read, write: if isSignedIn();
+    }
+    match /activity/{activityId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

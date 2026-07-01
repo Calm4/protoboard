@@ -4,6 +4,7 @@ import TaskList from "./TaskList.jsx";
 import StatsView from "./StatsView.jsx";
 import { EditableInput } from "./Editable.jsx";
 import ColorSwatches from "./ColorSwatches.jsx";
+import HeaderControls from "./HeaderControls.jsx";
 import { PRIORITIES, GLOBAL_TAGS, GRADIENTS } from "../constants.js";
 
 export default function ProjectView({
@@ -11,6 +12,7 @@ export default function ProjectView({
   visibleTasks, search, onSearch, onBack, onSetName, onSetColor, onSetBuild,
   onSetGradient, onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform,
   onToggleClosed, onOpenTask, statusActions, onRemoveProjectTag, onDeleteTask,
+  isDark, onToggleDark, user, role, onSignOut,
 }) {
   const statuses = project.statuses;
   const [palette, setPalette] = useState(false);
@@ -72,7 +74,13 @@ export default function ProjectView({
 
   return (
     <>
-      <div className="pb-back" onClick={onBack}>← Все проекты</div>
+      <div className="pb-top">
+        <div className="pb-brand pb-projectbrand" onClick={onBack} title="На главную">
+          <span className="pb-back-arrow">←</span>
+          <span className="pb-logo">{project.name}</span>
+        </div>
+        <HeaderControls isDark={isDark} onToggleDark={onToggleDark} user={user} role={role} onSignOut={onSignOut} />
+      </div>
 
       {/* Баннер-градиент вверху проекта (как у Slack) */}
       <div

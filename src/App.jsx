@@ -13,7 +13,7 @@ import LoginScreen from "./components/LoginScreen.jsx";
 // Главный компонент. Держит «состояние интерфейса» (что открыто, какой вид,
 // какой фильтр), а все данные и операции над ними берёт из useProjects().
 export default function Protoboard() {
-  // «Ворота» входа. Сейчас вход выключен (см. useAuth.js) — пропускают всех.
+  // «Ворота» входа. Google-логин обязателен, роль (admin/user) хранится в Firestore users/{uid}.
   const { ready, user, role, signInWithGoogle, signOut } = useAuth();
   const isAdmin = role === "admin";
 
@@ -25,7 +25,7 @@ export default function Protoboard() {
     addTag, removeTag, removeProjectTag, loadActivity,
     deleteProject, setGradient,
     undo,
-  } = useProjects(!!user);
+  } = useProjects(!!user, user);
 
   // Состояние интерфейса.
   const [openId, setOpenId] = useState(null);
@@ -188,7 +188,7 @@ export default function Protoboard() {
     return () => window.removeEventListener("hashchange", openTaskFromHash);
   }, [openTaskFromHash]);
 
-  // Пока проверяем сессию — ничего не мигаем (при выключенном входе сразу готово).
+  // Пока проверяем сессию — ничего не мигаем.
   if (!ready) return null;
   if (!user) return <LoginScreen onSignIn={signInWithGoogle} />;
 
@@ -232,6 +232,7 @@ export default function Protoboard() {
             user={user}
             onSignOut={signOut}
             isAdmin={isAdmin}
+            role={role}
           />
         ) : (
           <ProjectView
@@ -271,6 +272,11 @@ export default function Protoboard() {
             }}
             onRemoveProjectTag={(tag) => removeProjectTag(openId, tag)}
             onDeleteTask={(tid) => { deleteTask(openId, tid); if (taskId === tid) setTaskId(null); }}
+            isDark={dark}
+            onToggleDark={toggleDark}
+            user={user}
+            role={role}
+            onSignOut={signOut}
           />
         )}
       </div>
