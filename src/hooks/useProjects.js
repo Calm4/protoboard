@@ -6,6 +6,7 @@ import {
 import { db, isConfigured } from "../lib/firebase.js";
 import { compressImage } from "../lib/image.js";
 import { DEFAULT_COLOR, DEFAULT_STATUSES, PROJECT_COLORS, GLOBAL_TAGS } from "../constants.js";
+import { personName } from "../lib/people.js";
 
 // Blob → base64 data URL (для хранения картинок в Firestore).
 const blobToDataUrl = (blob) =>
@@ -488,7 +489,7 @@ export function useProjects(enabled = true, currentUser = null) {
 
   // ── Лог изменений ───────────────────────────────────────────────────────────
   const logActivity = (pid, tid, action) => {
-    const authorName = currentUser?.displayName || currentUser?.email || null;
+    const authorName = currentUser ? (personName(currentUser) || null) : null;
     run(setDoc(doc(db, "activity", newId()), { projectId: pid, taskId: tid, action, authorName, timestamp: Date.now() }));
   };
 
@@ -533,6 +534,15 @@ export function useProjects(enabled = true, currentUser = null) {
     patchTaskLocal(pid, tid, (t) => ({ ...t, tags: newTags }));
     run(updateDoc(doc(db, "tasks", tid), { tags: newTags }));
     logActivity(pid, tid, `Тег: -${tag}`);
+  };
+
+  // Добавить тег в справочник проекта напрямую (не через задачу) — для настроек проекта.
+  const addProjectTag = (pid, tag) => {
+    const proj = projects.find((p) => p.id === pid);
+    if (!proj || !tag || GLOBAL_TAGS.includes(tag) || proj.customTags.includes(tag)) return;
+    const newCustomTags = [...proj.customTags, tag];
+    patchProjectLocal(pid, (p) => ({ ...p, customTags: newCustomTags }));
+    run(updateDoc(doc(db, "projects", pid), { customTags: newCustomTags }));
   };
 
   const removeProjectTag = (pid, tag) => {
@@ -632,7 +642,7 @@ export function useProjects(enabled = true, currentUser = null) {
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask,
     addShots, removeShot, loadShots,
-    addTag, removeTag, removeProjectTag,
+    addTag, removeTag, addProjectTag, removeProjectTag,
     loadActivity,
     deleteProject,
     joinProject, addMember, removeMember, backfillMembers,

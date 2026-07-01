@@ -5,7 +5,7 @@ import {
   signInWithPopup,
   signOut as fbSignOut,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase.js";
 
 const provider = new GoogleAuthProvider();
@@ -13,6 +13,9 @@ const provider = new GoogleAuthProvider();
 export function useAuth() {
   const [user, setUser] = useState(undefined); // undefined = проверяем, null = не вошёл
   const [role, setRole] = useState(null);
+  const [customName, setCustomName] = useState("");
+  const [position, setPosition] = useState("");
+  const [justCreated, setJustCreated] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -22,6 +25,8 @@ export function useAuth() {
       if (!u) {
         setUser(null);
         setRole(null);
+        setCustomName("");
+        setPosition("");
         setReady(true);
         return;
       }
@@ -31,7 +36,7 @@ export function useAuth() {
         const snap = await getDoc(userRef);
 
         if (!snap.exists()) {
-          // Первый вход — создаём профиль с ролью user
+          // Первый вход — создаём профиль с ролью user, показываем онбординг
           await setDoc(userRef, {
             displayName: u.displayName || "",
             email: u.email || "",
@@ -40,14 +45,19 @@ export function useAuth() {
             createdAt: Date.now(),
           });
           setRole("user");
+          setCustomName("");
+          setPosition("");
+          setJustCreated(true);
         } else {
-          // Обновляем фото/имя (могли поменяться в Google), роль не трогаем
+          // Обновляем фото/имя (могли поменяться в Google), роль/имя/должность не трогаем
           setDoc(userRef, {
             displayName: u.displayName || "",
             email: u.email || "",
             photoURL: u.photoURL || "",
           }, { merge: true }).catch(() => {});
           setRole(snap.data().role || "user");
+          setCustomName(snap.data().customName || "");
+          setPosition(snap.data().position || "");
         }
       } catch {
         setRole("user"); // при ошибке Firestore — безопасный дефолт
@@ -61,5 +71,15 @@ export function useAuth() {
   const signInWithGoogle = () => signInWithPopup(auth, provider);
   const signOut = () => fbSignOut(auth);
 
-  return { user, role, ready, signInWithGoogle, signOut };
+  const updateProfile = async (patch) => {
+    if (!user) return;
+    if ("customName" in patch) setCustomName(patch.customName);
+    if ("position" in patch) setPosition(patch.position);
+    await updateDoc(doc(db, "users", user.uid), patch).catch(() => {});
+  };
+
+  return {
+    user, role, customName, position, justCreated, ready,
+    signInWithGoogle, signOut, updateProfile,
+  };
 }

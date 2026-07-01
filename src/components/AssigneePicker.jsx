@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { personName, personPosition } from "../lib/people.js";
 
 // Поле «Исполнитель»: выпадающий список с поиском по участникам проекта.
 // Хранит uid выбранного участника. Старые значения (свободный текст, введённый
@@ -13,7 +14,7 @@ export default function AssigneePicker({ value, projectMembers, users, onChange 
 
   const query = q.trim().toLowerCase();
   const filtered = memberUsers.filter((u) =>
-    !query || (u.displayName || "").toLowerCase().includes(query) || (u.email || "").toLowerCase().includes(query)
+    !query || personName(u).toLowerCase().includes(query) || (u.email || "").toLowerCase().includes(query)
   );
 
   const pick = (uid) => { onChange(uid); setQ(""); setOpen(false); };
@@ -25,9 +26,10 @@ export default function AssigneePicker({ value, projectMembers, users, onChange 
           <>
             {resolved.photoURL
               ? <img src={resolved.photoURL} width={20} height={20} className="pb-usermenu-avatar" referrerPolicy="no-referrer" />
-              : <span className="pb-usermenu-avatar fallback pb-assignee-fallback">{(resolved.displayName || resolved.email || "?")[0].toUpperCase()}</span>
+              : <span className="pb-usermenu-avatar fallback pb-assignee-fallback">{(personName(resolved) || "?")[0].toUpperCase()}</span>
             }
-            {resolved.displayName || resolved.email}
+            {personName(resolved)}
+            {personPosition(resolved) && <span className="pb-memberposition"> · {personPosition(resolved)}</span>}
           </>
         ) : value ? (
           <span>{value}</span>
@@ -48,7 +50,8 @@ export default function AssigneePicker({ value, projectMembers, users, onChange 
           <button className="pb-tagopt" onMouseDown={() => pick("")}>Без исполнителя</button>
           {filtered.map((u) => (
             <button key={u.uid} className="pb-tagopt" onMouseDown={() => pick(u.uid)}>
-              {u.displayName || u.email}
+              {personName(u)}
+              {personPosition(u) && <span className="pb-memberposition"> · {personPosition(u)}</span>}
             </button>
           ))}
           {filtered.length === 0 && <div className="pb-act-row muted">В проекте нет участников</div>}

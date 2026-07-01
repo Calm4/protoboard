@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { PRIORITIES, platLabel } from "../constants.js";
+import { personName, personPosition } from "../lib/people.js";
 import StatusMenu from "./StatusMenu.jsx";
 
 const dueBadge = (dueDate) => {
@@ -19,7 +20,12 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onRe
   const assigneeLabel = (assignee) => {
     if (!assignee) return "";
     const u = usersByUid.get(assignee);
-    return u ? (u.displayName || u.email) : assignee;
+    return u ? personName(u) : assignee;
+  };
+  const assigneeTitle = (assignee) => {
+    const u = usersByUid.get(assignee);
+    const pos = u && personPosition(u);
+    return pos ? `${personName(u)} — ${pos}` : "";
   };
   const cardDrag = useRef(null);
   const colDrag = useRef(null);
@@ -146,7 +152,7 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onRe
                       <span className={"pb-prio " + t.priority}>{PRIORITIES.find((p) => p.key === t.priority).label}</span>
                       {t.platform !== "both" && <span className={"pb-plat " + t.platform}>{platLabel(t.platform)}</span>}
                       <span style={{ flex: 1 }} />
-                      {t.assignee && <span className="pb-assignee">@{assigneeLabel(t.assignee)}</span>}
+                      {t.assignee && <span className="pb-assignee" title={assigneeTitle(t.assignee)}>@{assigneeLabel(t.assignee)}</span>}
                       {due && <span className={"pb-due " + due.cls}>{due.label}</span>}
                       {t.version && <span className="pb-verchip">{t.version}</span>}
                       {t.shots.length > 0 && <span className="pb-shot">▦ {t.shots.length}</span>}

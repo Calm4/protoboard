@@ -76,3 +76,8 @@ export const GLOBAL_TAGS = [
   "Баг", "Задача", "UI", "Баланс", "Краш",
   "Перфоманс", "Дизайн", "Геймплей", "Сеть", "Звук",
 ];
+
+// Должности — выбираются один раз при первом входе или в профиле, необязательные.
+export const POSITIONS = [
+  "Programmer", "Game Designer", "Project Manager", "QA Tester", "Art Designer",
+];

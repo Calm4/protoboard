@@ -6,16 +6,21 @@ import { useUsers } from "./hooks/useUsers.js";
 import { useAuth } from "./hooks/useAuth.js";
 import ProjectGrid from "./components/ProjectGrid.jsx";
 import ProjectView from "./components/ProjectView.jsx";
+import ProfilePage from "./components/ProfilePage.jsx";
 import TaskPanel from "./components/TaskPanel.jsx";
 import NewProjectModal from "./components/NewProjectModal.jsx";
 import DeleteProjectModal from "./components/DeleteProjectModal.jsx";
 import LoginScreen from "./components/LoginScreen.jsx";
+import OnboardingModal from "./components/OnboardingModal.jsx";
 
 // Главный компонент. Держит «состояние интерфейса» (что открыто, какой вид,
 // какой фильтр), а все данные и операции над ними берёт из useProjects().
 export default function Protoboard() {
   // «Ворота» входа. Google-логин обязателен, роль (admin/user) хранится в Firestore users/{uid}.
-  const { ready, user, role, signInWithGoogle, signOut } = useAuth();
+  const {
+    ready, user, role, customName, position, justCreated,
+    signInWithGoogle, signOut, updateProfile,
+  } = useAuth();
   const isAdmin = role === "admin";
 
   // Данные и операции (на шаге 3 этот хук переехал на Supabase).
@@ -23,11 +28,11 @@ export default function Protoboard() {
     projects, loadState, reload, createProject, setName, setColor, setArchived, setBuild,
     addStatus, renameStatus, recolorStatus, reorderStatuses, deleteStatus,
     addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot, loadShots,
-    addTag, removeTag, removeProjectTag, loadActivity,
+    addTag, removeTag, addProjectTag, removeProjectTag, loadActivity,
     deleteProject, setGradient,
     joinProject, addMember, removeMember, backfillMembers,
     undo,
-  } = useProjects(!!user, user);
+  } = useProjects(!!user, user && { ...user, customName });
 
   // Каталог всех, кто когда-либо входил (для резолва имён/поиска людей).
   const users = useUsers(!!user);
@@ -57,6 +62,11 @@ export default function Protoboard() {
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState(null);
   const [dark, setDark] = useState(() => localStorage.getItem("pb-dark") === "1");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [onboardOpen, setOnboardOpen] = useState(false);
+
+  // Онбординг (имя + должность) — один раз, сразу после создания профиля при первом входе.
+  useEffect(() => { if (justCreated) setOnboardOpen(true); }, [justCreated]);
 
   const toggleDark = () => setDark((d) => {
     const next = !d;
@@ -108,6 +118,10 @@ export default function Protoboard() {
     loadShots(pid, tid);
     loadActivity(pid, tid);
   };
+  const openProfile = () => setProfileOpen(true);
+  const closeProfile = () => setProfileOpen(false);
+  const openProjectFromProfile = (pid) => { setProfileOpen(false); openProject(pid); };
+  const openTaskFromProfile = (pid, tid) => { setProfileOpen(false); openTaskInProject(pid, tid); };
   const handleAddTask = (status) => {
     const t = addTask(openId, status, project.build);
     setTaskId(t.id);
@@ -124,7 +138,7 @@ export default function Protoboard() {
 
   // Записываем текущее состояние в историю при каждом переходе.
   useEffect(() => {
-    const nav = { openId, view, taskId };
+    const nav = { openId, view, taskId, profileOpen };
     if (fromPopRef.current) {
       // Это восстановление из popstate — не добавляем новую запись.
       fromPopRef.current = false;
@@ -139,10 +153,11 @@ export default function Protoboard() {
       return;
     }
     const prev = navPrevRef.current;
-    if (prev && prev.openId === nav.openId && prev.view === nav.view && prev.taskId === nav.taskId) return;
+    if (prev && prev.openId === nav.openId && prev.view === nav.view && prev.taskId === nav.taskId
+      && prev.profileOpen === nav.profileOpen) return;
     navPrevRef.current = nav;
     window.history.pushState(nav, "");
-  }, [openId, view, taskId]);
+  }, [openId, view, taskId, profileOpen]);
 
   // Обрабатываем нажатие кнопки «Назад» / «Вперёд».
   useEffect(() => {
@@ -152,10 +167,12 @@ export default function Protoboard() {
       if (!s) {
         setOpenId(null);
         setTaskId(null);
+        setProfileOpen(false);
       } else {
         setOpenId(s.openId ?? null);
         setView(s.view ?? "stats");
         setTaskId(s.taskId ?? null);
+        setProfileOpen(!!s.profileOpen);
         if (s.taskId && s.openId) {
           loadShots(s.openId, s.taskId);
           loadActivity(s.openId, s.taskId);
@@ -234,7 +251,22 @@ export default function Protoboard() {
     <div className={"pb" + (dark ? " dark" : "")}>
       <style>{css}</style>
       <div className="pb-wrap">
-        {!project ? (
+        {profileOpen ? (
+          <ProfilePage
+            user={user}
+            role={role}
+            customName={customName}
+            position={position}
+            onSaveProfile={updateProfile}
+            onSignOut={signOut}
+            onBack={closeProfile}
+            isDark={dark}
+            onToggleDark={toggleDark}
+            projects={projects}
+            onOpenProject={openProjectFromProfile}
+            onOpenTask={openTaskFromProfile}
+          />
+        ) : !project ? (
           <ProjectGrid
             active={active}
             archived={archived}
@@ -251,9 +283,9 @@ export default function Protoboard() {
             onSetGradient={(pid, grad) => setGradient(pid, grad)}
             onDeleteProject={(pid) => setDeletingProjId(pid)}
             user={user}
-            onSignOut={signOut}
+            customName={customName}
+            onOpenProfile={openProfile}
             isAdmin={isAdmin}
-            role={role}
             onJoinProject={joinProject}
           />
         ) : (
@@ -292,17 +324,15 @@ export default function Protoboard() {
               reorder: (ordered) => reorderStatuses(openId, ordered),
               remove: (sid) => deleteStatus(openId, sid),
             }}
+            onAddProjectTag={(tag) => addProjectTag(openId, tag)}
             onRemoveProjectTag={(tag) => removeProjectTag(openId, tag)}
             onDeleteTask={(tid) => { deleteTask(openId, tid); if (taskId === tid) setTaskId(null); }}
             isDark={dark}
             onToggleDark={toggleDark}
             user={user}
-            role={role}
-            onSignOut={signOut}
+            customName={customName}
+            onOpenProfile={openProfile}
             users={users}
-            allProjects={projects}
-            onOpenProject={openProject}
-            onOpenTaskGlobal={openTaskInProject}
             onAddMember={(uid) => addMember(openId, uid)}
             onRemoveMember={(uid) => removeMember(openId, uid)}
           />
@@ -310,7 +340,7 @@ export default function Protoboard() {
       </div>
 
       {/* Панель задачи */}
-      {task && (
+      {task && !profileOpen && (
         <TaskPanel
           task={task}
           statuses={project.statuses}
@@ -350,6 +380,15 @@ export default function Protoboard() {
           onChange={setNewProj}
           onCreate={handleCreateProject}
           onClose={() => setNewProj(null)}
+        />
+      )}
+
+      {/* Онбординг — один раз при первом входе */}
+      {onboardOpen && (
+        <OnboardingModal
+          googleName={user.displayName}
+          onSave={(patch) => { updateProfile(patch); setOnboardOpen(false); }}
+          onSkip={() => setOnboardOpen(false)}
         />
       )}
 

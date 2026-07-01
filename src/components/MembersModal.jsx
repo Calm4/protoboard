@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { personName, personPosition } from "../lib/people.js";
 
 // Модалка участников проекта: список текущих (с удалением) + поиск и добавление
 // новых из общего каталога пользователей (users).
@@ -11,7 +12,7 @@ export default function MembersModal({ members, users, currentUid, onAdd, onRemo
   const candidates = q
     ? (users || []).filter((u) =>
         !memberSet.has(u.uid) &&
-        ((u.displayName || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q))
+        (personName(u).toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q))
       ).slice(0, 8)
     : [];
 
@@ -28,10 +29,13 @@ export default function MembersModal({ members, users, currentUid, onAdd, onRemo
             <div key={u.uid} className="pb-memberrow">
               {u.photoURL
                 ? <img src={u.photoURL} width={28} height={28} className="pb-memberavatar" referrerPolicy="no-referrer" />
-                : <span className="pb-memberavatar fallback">{(u.displayName || u.email || "?")[0].toUpperCase()}</span>
+                : <span className="pb-memberavatar fallback">{(personName(u) || "?")[0].toUpperCase()}</span>
               }
               <div className="pb-membermeta">
-                <div className="pb-membername">{u.displayName || u.email}</div>
+                <div className="pb-membername">
+                  {personName(u)}
+                  {personPosition(u) && <span className="pb-memberposition"> · {personPosition(u)}</span>}
+                </div>
                 <div className="pb-memberemail">{u.email}</div>
               </div>
               <button className="pb-tag-x" onClick={() => onRemove(u.uid)}>
@@ -59,7 +63,8 @@ export default function MembersModal({ members, users, currentUid, onAdd, onRemo
                   className="pb-tagopt"
                   onClick={() => { onAdd(u.uid); setSearch(""); }}
                 >
-                  {u.displayName || u.email}
+                  {personName(u)}
+                  {personPosition(u) && <span className="pb-memberemail"> · {personPosition(u)}</span>}
                   <span className="pb-memberemail"> · {u.email}</span>
                 </button>
               ))}

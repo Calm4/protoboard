@@ -15,7 +15,7 @@ export default function ProjectGrid({
   active, archived, allProjects, showArchived, onToggleArchived,
   onOpen, onArchive, onUnarchive, onNewProject, onOpenTask,
   isDark, onToggleDark, onSetGradient, onDeleteProject,
-  user, onSignOut, isAdmin, role, onJoinProject,
+  user, customName, onOpenProfile, isAdmin, onJoinProject,
 }) {
   const [gSearch, setGSearch] = useState("");
   const [gOpen, setGOpen] = useState(false);
@@ -80,8 +80,8 @@ export default function ProjectGrid({
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <HeaderControls
-            isDark={isDark} onToggleDark={onToggleDark} user={user} role={role} onSignOut={onSignOut}
-            projects={allProjects} onOpenProject={onOpen} onOpenTask={onOpenTask}
+            isDark={isDark} onToggleDark={onToggleDark} user={user} customName={customName}
+            onOpenProfile={onOpenProfile}
           />
           <button className="pb-btn primary" onClick={onNewProject}>+ Новый проект</button>
         </div>

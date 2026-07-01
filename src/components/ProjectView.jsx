@@ -3,9 +3,9 @@ import Board from "./Board.jsx";
 import TaskList from "./TaskList.jsx";
 import StatsView from "./StatsView.jsx";
 import { EditableInput } from "./Editable.jsx";
-import ColorSwatches from "./ColorSwatches.jsx";
 import HeaderControls from "./HeaderControls.jsx";
 import MembersModal from "./MembersModal.jsx";
+import ProjectSettingsModal from "./ProjectSettingsModal.jsx";
 import { PRIORITIES, GLOBAL_TAGS, GRADIENTS } from "../constants.js";
 
 export default function ProjectView({
@@ -13,17 +13,17 @@ export default function ProjectView({
   visibleTasks, search, onSearch, onBack, onSetName, onSetColor, onSetBuild,
   onSetGradient, onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform,
   onToggleClosed, onOpenTask, statusActions, onRemoveProjectTag, onDeleteTask,
-  isDark, onToggleDark, user, role, onSignOut,
-  users, allProjects, onOpenProject, onOpenTaskGlobal, onAddMember, onRemoveMember,
+  isDark, onToggleDark, user, customName, onOpenProfile,
+  users, onAddMember, onRemoveMember, onAddProjectTag,
 }) {
   const statuses = project.statuses;
-  const [palette, setPalette] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
   const [bannerPickerPos, setBannerPickerPos] = useState({ top: 0, right: 0 });
   const [membersOpen, setMembersOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const closedCount = project.tasks.filter((t) => t.closed).length;
 
@@ -82,8 +82,8 @@ export default function ProjectView({
           <span className="pb-logo">Proto<b>board</b></span>
         </div>
         <HeaderControls
-          isDark={isDark} onToggleDark={onToggleDark} user={user} role={role} onSignOut={onSignOut}
-          projects={allProjects} onOpenProject={onOpenProject} onOpenTask={onOpenTaskGlobal}
+          isDark={isDark} onToggleDark={onToggleDark} user={user} customName={customName}
+          onOpenProfile={onOpenProfile}
         />
       </div>
 
@@ -128,19 +128,9 @@ export default function ProjectView({
 
       <div className="pb-phead">
         <div className="pb-ptitle">
-          <div className="pb-colorwrap">
-            <button className="pb-colordot" style={{ background: project.color }} title="Цвет проекта" onClick={() => setPalette((o) => !o)} />
-            {palette && (
-              <>
-                <div className="pb-colorscrim" onClick={() => setPalette(false)} />
-                <div className="pb-colorpop">
-                  <ColorSwatches value={project.color} onChange={(c) => { onSetColor(c); setPalette(false); }} />
-                </div>
-              </>
-            )}
-          </div>
-          <EditableInput className="pb-nameedit" value={project.name} autoSize title="Название проекта" onCommit={onSetName} />
+          <span className="pb-nameedit static" title={project.name}>{project.name}</span>
           <EditableInput className="pb-buildedit" value={project.build} title="Версия проекта" onCommit={onSetBuild} />
+          <button className="pb-settingsgear" title="Настройки проекта" onClick={() => setSettingsOpen(true)}>⚙</button>
         </div>
         <div className="pb-controls">
           <div className="pb-switch">
@@ -148,9 +138,6 @@ export default function ProjectView({
             <button className={view === "board" ? "on" : ""} onClick={() => onSetView("board")}>Доска</button>
             <button className={view === "list" ? "on" : ""} onClick={() => onSetView("list")}>Список</button>
           </div>
-          <button className="pb-btn sm ghost" onClick={() => setMembersOpen(true)}>
-            👥 Участники ({(project.members || []).length})
-          </button>
           {view !== "stats" && (
             <>
               <div className="pb-controls-sep" />
@@ -177,81 +164,50 @@ export default function ProjectView({
       )}
 
       {view !== "stats" && (
-        <div className="pb-filterbar">
-          <div className="pb-filterwrap">
-            <button className={"pb-btn sm" + (activeCount ? " primary" : "")} onClick={() => setFiltersOpen((o) => !o)}>
-              ⚙ Фильтры{activeCount ? ` · ${activeCount}` : ""}
+        <div className="pb-filterbar-inline">
+          <div className="pb-chips">
+            {["all", "ios", "android"].map((v) => (
+              <button key={v} className={"pb-chip" + (f.platform === v ? " on" : "")} onClick={() => onSetFilter("platform", v)}>
+                {v === "all" ? "Все" : v === "ios" ? "iOS" : "Android"}
+              </button>
+            ))}
+          </div>
+          <select className="pb-select sm" value={f.priority} onChange={(e) => onSetFilter("priority", e.target.value)} title="Приоритет">
+            <option value="all">Приоритет: все</option>
+            {PRIORITIES.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </select>
+          <select className="pb-select sm" value={f.status} onChange={(e) => onSetFilter("status", e.target.value)} title="Статус">
+            <option value="all">Статус: все</option>
+            {statuses.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+          <select className="pb-select sm" value={f.version} onChange={(e) => onSetFilter("version", e.target.value)} title="Версия">
+            <option value="all">Версия: все</option>
+            {versions.map((v) => <option key={v} value={v}>{v}</option>)}
+            {hasBlankVersion && <option value="__none__">(без версии)</option>}
+          </select>
+          <div className="pb-taginput-wrap">
+            <button className={"pb-btn sm ghost" + ((f.tags || []).length ? " primary" : "")} onClick={() => setFiltersOpen((o) => !o)}>
+              Теги{(f.tags || []).length ? ` · ${f.tags.length}` : ""} ▾
             </button>
             {filtersOpen && (
-              <>
-                <div className="pb-colorscrim" onClick={() => setFiltersOpen(false)} />
-                <div className="pb-filterpop">
-                  <div className="pb-frow">
-                    <span className="lbl">Платформа</span>
-                    <div className="pb-chips">
-                      {["all", "ios", "android"].map((v) => (
-                        <button key={v} className={"pb-chip" + (f.platform === v ? " on" : "")} onClick={() => onSetFilter("platform", v)}>
-                          {v === "all" ? "Все" : v === "ios" ? "iOS" : "Android"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="pb-frow">
-                    <span className="lbl">Приоритет</span>
-                    <select className="pb-select" value={f.priority} onChange={(e) => onSetFilter("priority", e.target.value)}>
-                      <option value="all">Все</option>
-                      {PRIORITIES.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-                    </select>
-                  </div>
-                  <div className="pb-frow">
-                    <span className="lbl">Статус</span>
-                    <select className="pb-select" value={f.status} onChange={(e) => onSetFilter("status", e.target.value)}>
-                      <option value="all">Все</option>
-                      {statuses.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-                    </select>
-                  </div>
-                  <div className="pb-frow">
-                    <span className="lbl">Версия</span>
-                    <select className="pb-select" value={f.version} onChange={(e) => onSetFilter("version", e.target.value)}>
-                      <option value="all">Все</option>
-                      {versions.map((v) => <option key={v} value={v}>{v}</option>)}
-                      {hasBlankVersion && <option value="__none__">(без версии)</option>}
-                    </select>
-                  </div>
-                  <div className="pb-frow">
-                    <span className="lbl">Теги</span>
-                    <div className="pb-chips wrap">
-                      {allTags.map((tag) => (
-                        <button key={tag} className={"pb-chip" + ((f.tags || []).includes(tag) ? " on" : "")} onClick={() => toggleTagFilter(tag)}>{tag}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="pb-frow">
-                    <span className="lbl">№ задачи</span>
-                    <input className="pb-fnum" type="number" min="1" placeholder="напр. 12" value={f.num} onChange={(e) => onSetFilter("num", e.target.value)} />
-                  </div>
-                  <div className="pb-frow col">
-                    <span className="lbl">Дата создания</span>
-                    <div className="pb-chips">
-                      <button className="pb-chip" onClick={() => setPreset(1)}>Сегодня</button>
-                      <button className="pb-chip" onClick={() => setPreset(7)}>7 дней</button>
-                      <button className="pb-chip" onClick={() => setPreset(30)}>30 дней</button>
-                      <button className={"pb-chip" + (!f.dateFrom && !f.dateTo ? " on" : "")} onClick={() => setPreset(null)}>Всё</button>
-                    </div>
-                    <div className="pb-daterow">
-                      <input type="date" className="pb-select" value={f.dateFrom} onChange={(e) => onSetFilter("dateFrom", e.target.value)} />
-                      <span className="dash">—</span>
-                      <input type="date" className="pb-select" value={f.dateTo} onChange={(e) => onSetFilter("dateTo", e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="pb-ffoot">
-                    <button className="pb-btn ghost sm" disabled={!activeCount} onClick={onResetFilters}>Сбросить</button>
-                    <button className="pb-btn sm" onClick={() => setFiltersOpen(false)}>Готово</button>
-                  </div>
-                </div>
-              </>
+              <div className="pb-tagdrop">
+                {allTags.map((tag) => (
+                  <button key={tag} className={"pb-tagopt" + ((f.tags || []).includes(tag) ? " on" : "")} onMouseDown={() => toggleTagFilter(tag)}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
             )}
+            {filtersOpen && <div className="pb-tagscrim" onMouseDown={() => setFiltersOpen(false)} />}
           </div>
+          <input className="pb-fnum" type="number" min="1" placeholder="№ задачи" value={f.num} onChange={(e) => onSetFilter("num", e.target.value)} />
+          <div className="pb-chips">
+            <button className="pb-chip" onClick={() => setPreset(1)}>Сегодня</button>
+            <button className="pb-chip" onClick={() => setPreset(7)}>7д</button>
+            <button className="pb-chip" onClick={() => setPreset(30)}>30д</button>
+            <button className={"pb-chip" + (!f.dateFrom && !f.dateTo ? " on" : "")} onClick={() => setPreset(null)}>Все даты</button>
+          </div>
+          {activeCount > 0 && <button className="pb-btn ghost sm" onClick={onResetFilters}>✕ Сбросить</button>}
           {closedCount > 0 && (
             <button
               className={"pb-btn sm" + (filters.showClosed ? "" : " ghost")}
@@ -323,6 +279,20 @@ export default function ProjectView({
           onAdd={(uid) => onAddMember(uid)}
           onRemove={(uid) => onRemoveMember(uid)}
           onClose={() => setMembersOpen(false)}
+        />
+      )}
+
+      {settingsOpen && (
+        <ProjectSettingsModal
+          project={project}
+          onSetName={onSetName}
+          onSetColor={onSetColor}
+          onSetGradient={onSetGradient}
+          statusActions={statusActions}
+          onAddProjectTag={onAddProjectTag}
+          onRemoveProjectTag={onRemoveProjectTag}
+          onOpenMembers={() => { setSettingsOpen(false); setMembersOpen(true); }}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
     </>

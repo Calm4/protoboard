@@ -94,27 +94,15 @@ export const css = `
 .pb-card.dropbefore { box-shadow:inset 0 3px 0 0 var(--accent); }
 .pb-row.dropbefore { box-shadow:inset 0 2px 0 0 var(--accent); }
 
-/* filter bar */
-.pb-filterbar { display:flex; align-items:center; gap:10px; margin:0 0 18px; }
-.pb-filterbar .lbl { font-family:'Space Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--soft); }
+/* filter bar — всегда видимая строка (не попап) */
+.pb-filterbar-inline { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
 .pb-chips { display:inline-flex; gap:6px; }
+.pb-chips.wrap { flex-wrap:wrap; }
 .pb-chip { border:1px solid var(--line); background:var(--surface); color:var(--soft); font-size:12.5px; font-weight:600; padding:5px 12px; border-radius:99px; cursor:pointer; font-family:'Inter'; }
 .pb-chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
-
-/* Панель фильтров (кнопка «Фильтры» + всплывающая панель) */
-.pb-filterwrap { position:relative; display:inline-block; }
-.pb-filterpop { position:absolute; top:42px; left:0; z-index:31; width:300px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:0 12px 30px rgba(20,22,31,.16); display:flex; flex-direction:column; gap:12px; }
-.pb-filterpop .pb-chips { flex-wrap:wrap; }
-.pb-frow { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.pb-frow.col { flex-direction:column; align-items:stretch; gap:8px; }
-.pb-frow .lbl { font-family:'Space Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--soft); }
-.pb-frow .pb-select { min-width:150px; }
+.pb-poschips { display:flex; flex-wrap:wrap; gap:6px; }
 .pb-fnum { font-family:'Inter'; font-size:12.5px; border:1px solid var(--line); border-radius:8px; padding:5px 8px; background:var(--surface); color:var(--ink); width:96px; outline:none; }
 .pb-fnum:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
-.pb-daterow { display:flex; align-items:center; gap:8px; }
-.pb-daterow .pb-select { flex:1; min-width:0; }
-.pb-daterow .dash { color:var(--soft); }
-.pb-ffoot { display:flex; justify-content:space-between; gap:8px; border-top:1px solid var(--line); padding-top:12px; }
 .pb-fcount { font-family:'Space Mono'; font-size:11px; color:var(--soft); }
 .pb-btn:disabled { opacity:.45; cursor:default; box-shadow:none; transform:none; }
 
@@ -378,14 +366,16 @@ export const css = `
 .pb-projectbrand { cursor:pointer; }
 .pb-projectbrand:hover .pb-logo { color:var(--accent); }
 
-/* ── Профиль (модал) ──────────────────────────────────────────────────────── */
-.pb-profile-head { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
-.pb-profile-avatar { width:56px; height:56px; border-radius:50%; display:block; flex-shrink:0; }
-.pb-profile-avatar.fallback { background:var(--accent); color:#fff; font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; }
-.pb-profile-name { font-family:'Space Grotesk'; font-size:17px; font-weight:700; color:var(--text); }
+/* ── Профиль (страница) ───────────────────────────────────────────────────── */
+.pb-profilepage { max-width:520px; margin:0 auto; padding:8px 0 40px; }
+.pb-profile-head { display:flex; align-items:center; gap:16px; margin-bottom:24px; }
+.pb-profile-avatar { width:72px; height:72px; border-radius:50%; display:block; flex-shrink:0; }
+.pb-profile-avatar.fallback { background:var(--accent); color:#fff; font-size:28px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.pb-profile-name { font-family:'Space Grotesk'; font-size:19px; font-weight:700; color:var(--text); }
 .pb-profile-email { font-size:13px; color:var(--c-muted); margin-top:2px; }
-.pb-rolechip { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; background:var(--surface2); color:var(--soft); margin-bottom:20px; }
+.pb-rolechip { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; background:var(--surface2); color:var(--soft); }
 .pb-rolechip.admin { background:rgba(178,54,54,.12); color:#B23636; }
+.pb-profilelist { margin-top:8px; display:flex; flex-direction:column; gap:0; max-height:320px; overflow-y:auto; border:1px solid var(--line); border-radius:10px; padding:2px 8px; }
 
 /* ── Участники проекта (модал) ────────────────────────────────────────────── */
 .pb-members-modal { max-width:420px; }
@@ -397,9 +387,25 @@ export const css = `
 .pb-membermeta { flex:1; min-width:0; }
 .pb-membername { font-size:13.5px; font-weight:500; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pb-memberemail { font-size:11.5px; color:var(--c-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pb-memberposition { font-size:11.5px; color:var(--c-muted); font-weight:400; }
 .pb-memberrow .pb-tag-x { flex-shrink:0; font-size:12px; padding:4px 8px; border-radius:7px; background:var(--surface2); opacity:1; }
 .pb-memberrow .pb-tag-x:hover { background:rgba(178,54,54,.12); color:#B23636; }
 .pb-memberadd-list { margin-top:6px; border:1px solid var(--line); border-radius:10px; max-height:180px; overflow-y:auto; padding:4px; }
+
+/* ── Настройки проекта (модал) ────────────────────────────────────────────── */
+.pb-settings-modal { max-width:520px; max-height:85vh; overflow-y:auto; }
+.pb-nameedit.static { cursor:default; display:inline-block; }
+.pb-settingsgear { border:1px solid var(--line); background:var(--surface); border-radius:8px; width:32px; height:32px; font-size:15px; cursor:pointer; color:var(--soft); flex-shrink:0; }
+.pb-settingsgear:hover { color:var(--ink); border-color:var(--accent); }
+.pb-settingsrow { display:flex; gap:8px; align-items:center; }
+.pb-settingsrow .pb-input { flex:1; }
+.pb-settingslist { display:flex; flex-direction:column; gap:6px; }
+.pb-statusrow { display:flex; align-items:center; gap:8px; }
+.pb-statusrow .pb-input { flex:1; }
+.pb-iconbtn { width:26px; height:26px; border:1px solid var(--line); background:var(--surface); border-radius:6px; cursor:pointer; color:var(--soft); font-size:11px; flex-shrink:0; }
+.pb-iconbtn:hover { color:var(--ink); }
+.pb-iconbtn:disabled { opacity:.35; cursor:default; }
+.pb-iconbtn.danger:hover { background:rgba(178,54,54,.12); color:#B23636; border-color:transparent; }
 
 /* ── Кнопка «выполнено» (Asana-style checkbox) ───────────────────────────── */
 .pb-closebtn { width:17px; height:17px; border-radius:50%; border:2px solid var(--line); background:transparent; cursor:pointer; flex-shrink:0; padding:0; position:relative; transition:border-color .12s, background .12s; margin-top:1px; }
@@ -510,9 +516,6 @@ export const css = `
   /* Сводка статистики — 2 колонки */
   .pb-stat-cards{ grid-template-columns:1fr 1fr; }
   .pb-stat-2col{ grid-template-columns:1fr; }
-
-  /* Фильтр — попап тоже на всю ширину */
-  .pb-filterpop{ width:calc(100vw - 32px); max-height:80vh; overflow-y:auto; }
 
   /* Карточки доски — нормальная ширина */
   .pb-col{ min-width:280px; }
