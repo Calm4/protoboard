@@ -27,7 +27,7 @@ export const css = `
 .pb.dark .pb-card { box-shadow:0 1px 4px rgba(0,0,0,.25); }
 .pb.dark .pb-lightbox { background:rgba(0,0,0,.92); }
 .pb.dark .pb-panel { box-shadow:-8px 0 32px rgba(0,0,0,.4); }
-.pb-wrap { max-width:1180px; margin:0 auto; padding:26px 22px 80px; }
+.pb-wrap { max-width:100%; margin:0; padding:26px clamp(22px, 3vw, 56px) 80px; }
 
 .pb-top { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:8px; }
 .pb-brand { display:flex; align-items:baseline; gap:10px; }
@@ -474,7 +474,7 @@ export const css = `
 /* ── Исполнитель (выпадающий список участников) ──────────────────────────── */
 .pb-assignee-btn{ display:flex; align-items:center; gap:7px; width:100%; text-align:left; border:1px solid var(--line); border-radius:9px; padding:8px 11px; background:var(--surface); color:var(--ink); font-size:14px; cursor:pointer; font-family:'Inter'; }
 .pb-assignee-btn:hover{ border-color:var(--accent); }
-.pb-assignee-btn .muted{ color:var(--c-muted); }
+.muted{ color:var(--c-muted); font-weight:400; }
 .pb-assignee-fallback{ width:20px!important; height:20px!important; font-size:10px!important; }
 .pb-tagopt.new{ color:var(--accent); font-weight:500; }
 .pb-tagscrim{ position:fixed; inset:0; z-index:200; }

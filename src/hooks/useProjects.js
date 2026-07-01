@@ -366,7 +366,7 @@ export function useProjects(enabled = true, currentUser = null) {
     const order = nextOrder(proj);
     const num = nextNum(proj);
     const task = {
-      id, title: "Новая задача", desc: "", notes: "",
+      id, title: "", desc: "", notes: "",
       priority: "med", status, platform: "both", version: build, order, num,
       created: new Date().toISOString(), tags: [], shots: [], shotsLoaded: true,
       activity: [], activityLoaded: true,

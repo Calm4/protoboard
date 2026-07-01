@@ -139,7 +139,7 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onRe
                           onClick={(e) => { e.stopPropagation(); onToggleClosed(t.id); }}
                         />
                       )}
-                      <h4>{t.title}</h4>
+                      <h4>{t.title || <span className="muted">Без названия</span>}</h4>
                     </div>
                     {(t.tags || []).length > 0 && (
                       <div className="pb-cardtags">

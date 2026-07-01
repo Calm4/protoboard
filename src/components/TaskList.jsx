@@ -120,7 +120,7 @@ export default function TaskList({ tasks, statuses, statusActions, onMoveTask, o
                 </div>
                 <div className="pb-rowtitle">
                   {t.num != null && <span className="pb-num">#{t.num}</span>}
-                  <b>{t.title}</b>
+                  <b>{t.title || <span className="muted">Без названия</span>}</b>
                 </div>
                 <span className="col-plat" onClick={(e) => e.stopPropagation()}>
                   <select
