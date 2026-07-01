@@ -19,7 +19,7 @@ export default function Protoboard() {
   // «Ворота» входа. Google-логин обязателен, роль (admin/user) хранится в Firestore users/{uid}.
   const {
     ready, user, role, customName, position, justCreated,
-    signInWithGoogle, signOut, updateProfile,
+    signInWithGoogle, signInAnon, signOut, updateProfile,
   } = useAuth();
   const isAdmin = role === "admin";
 
@@ -233,7 +233,7 @@ export default function Protoboard() {
 
   // Пока проверяем сессию — ничего не мигаем.
   if (!ready) return null;
-  if (!user) return <LoginScreen onSignIn={signInWithGoogle} />;
+  if (!user) return <LoginScreen onSignIn={signInWithGoogle} onSignInAnon={signInAnon} />;
 
   // Экран первой загрузки / ошибки связи с базой (вместо пугающего пустого списка).
   const shell = (content) => (

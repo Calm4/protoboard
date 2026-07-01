@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function LoginScreen({ onSignIn }) {
+export default function LoginScreen({ onSignIn, onSignInAnon }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -13,6 +13,17 @@ export default function LoginScreen({ onSignIn }) {
       if (e.code !== "auth/popup-closed-by-user") {
         setError("Не удалось войти. Попробуй ещё раз.");
       }
+    }
+    setLoading(false);
+  };
+
+  const handleSignInAnon = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await onSignInAnon();
+    } catch {
+      setError("Не удалось войти. Включена ли Anonymous-авторизация в Firebase?");
     }
     setLoading(false);
   };
@@ -33,6 +44,10 @@ export default function LoginScreen({ onSignIn }) {
         .pb-btn-google:hover:not(:disabled) { background:var(--hover); box-shadow:0 2px 8px rgba(0,0,0,.07); }
         .pb-btn-google:disabled { opacity:.6; cursor:default; }
         .pb-login .err { color:#B23636; font-size:12.5px; margin-top:14px; }
+        .pb-btn-devbypass { display:block; width:100%; margin-top:14px; padding:8px; border:1px dashed var(--line);
+          border-radius:10px; background:transparent; color:var(--c-muted); font-size:12px; cursor:pointer; }
+        .pb-btn-devbypass:hover:not(:disabled) { border-color:var(--soft); color:var(--soft); }
+        .pb-btn-devbypass:disabled { opacity:.5; cursor:default; }
       `}</style>
       <div className="pb-login-wrap">
         <div className="pb-login">
@@ -48,6 +63,11 @@ export default function LoginScreen({ onSignIn }) {
             {loading ? "Входим…" : "Войти через Google"}
           </button>
           {error && <div className="err">{error}</div>}
+          {import.meta.env.DEV && onSignInAnon && (
+            <button className="pb-btn-devbypass" onClick={handleSignInAnon} disabled={loading}>
+              Войти без Google (только localhost)
+            </button>
+          )}
         </div>
       </div>
     </div>

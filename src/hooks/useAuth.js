@@ -3,6 +3,7 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithPopup,
+  signInAnonymously,
   signOut as fbSignOut,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
@@ -71,6 +72,12 @@ export function useAuth() {
   const signInWithGoogle = () => signInWithPopup(auth, provider);
   const signOut = () => fbSignOut(auth);
 
+  // Обход Google-попапа только для локальной разработки. import.meta.env.DEV — это
+  // константа, известная на этапе сборки: при `npm run build` она равна false, и весь
+  // этот код (включая ветку с signInAnonymously) вырезается сборщиком — в продакшен-
+  // бандле его физически не будет, не только скрытая кнопка.
+  const signInAnon = import.meta.env.DEV ? () => signInAnonymously(auth) : undefined;
+
   const updateProfile = async (patch) => {
     if (!user) return;
     if ("customName" in patch) setCustomName(patch.customName);
@@ -80,6 +87,6 @@ export function useAuth() {
 
   return {
     user, role, customName, position, justCreated, ready,
-    signInWithGoogle, signOut, updateProfile,
+    signInWithGoogle, signInAnon, signOut, updateProfile,
   };
 }
