@@ -12,7 +12,7 @@ import { useT } from "../lib/i18n.js";
 export default function ProjectSettingsModal({
   project, onSetName, onSetColor, onSetGradient, statusActions,
   onAddProjectTag, onRemoveProjectTag, onClose,
-  users, currentUid, onAddMember, onRemoveMember,
+  users, currentUid, onAddMember, onRemoveMember, isAdmin,
 }) {
   const t = useT();
   const [name, setNameDraft] = useState(project.name);
@@ -62,6 +62,7 @@ export default function ProjectSettingsModal({
                 currentUid={currentUid}
                 onAdd={onAddMember}
                 onRemove={onRemoveMember}
+                isAdmin={isAdmin}
               />
             </div>
           )}

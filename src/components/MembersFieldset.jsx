@@ -5,7 +5,7 @@ import { useT } from "../lib/i18n.js";
 // Список участников проекта (с удалением) + поиск и добавление новых из общего
 // каталога пользователей. Без модальной обёртки — используется как содержимое
 // раскрывающегося списка «Участники» внутри ProjectSettingsModal.jsx.
-export default function MembersFieldset({ members, users, currentUid, onAdd, onRemove }) {
+export default function MembersFieldset({ members, users, currentUid, onAdd, onRemove, isAdmin }) {
   const t = useT();
   const [search, setSearch] = useState("");
   const memberSet = new Set(members || []);
@@ -36,9 +36,11 @@ export default function MembersFieldset({ members, users, currentUid, onAdd, onR
               </div>
               <div className="pb-memberemail">{u.email}</div>
             </div>
-            <button className="pb-tag-x" onClick={() => onRemove(u.uid)}>
-              {u.uid === currentUid ? t("Покинуть") : "✕"}
-            </button>
+            {(u.uid === currentUid || isAdmin) && (
+              <button className="pb-tag-x" onClick={() => onRemove(u.uid)}>
+                {u.uid === currentUid ? t("Покинуть") : "✕"}
+              </button>
+            )}
           </div>
         ))}
       </div>

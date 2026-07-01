@@ -16,13 +16,15 @@ export default function ProjectView({
   onSetGradient, onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform,
   onToggleClosed, onOpenTask, statusActions, onRemoveProjectTag, onDeleteTask,
   isDark, onToggleDark, lang, onToggleLang, user, customName, onOpenProfile,
-  users, onAddMember, onRemoveMember, onAddProjectTag,
+  users, onAddMember, onRemoveMember, onAddProjectTag, isAdmin,
   allProjects, onOpenTaskGlobal, onOpenProjectGlobal, onRequestJoin,
 }) {
   const t = useT();
   const statuses = project.statuses;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+  const [versionFilterOpen, setVersionFilterOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
@@ -36,8 +38,8 @@ export default function ProjectView({
     .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
   const hasBlankVersion = project.tasks.some((t) => !t.version);
   const activeCount = [
-    f.platform !== "all", f.priority !== "all", f.status !== "all",
-    f.version !== "all", f.num.trim() !== "", !!(f.dateFrom || f.dateTo),
+    f.platform !== "all", f.priority !== "all", f.status.length > 0,
+    f.version.length > 0, f.num.trim() !== "", !!(f.dateFrom || f.dateTo),
     (f.tags || []).length > 0,
   ].filter(Boolean).length;
 
@@ -62,6 +64,12 @@ export default function ProjectView({
       : f.dateFrom ? `${t("С")} ${f.dateFrom}` : `${t("По")} ${f.dateTo}`;
   const toggleTagFilter = (tag) => {
     onSetFilter("tags", (cur = []) => (cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag]));
+  };
+  const toggleStatusFilter = (id) => {
+    onSetFilter("status", (cur = []) => (cur.includes(id) ? cur.filter((s) => s !== id) : [...cur, id]));
+  };
+  const toggleVersionFilter = (v) => {
+    onSetFilter("version", (cur = []) => (cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]));
   };
 
   const toggleSelect = (id) => {
@@ -189,19 +197,51 @@ export default function ProjectView({
             <option value="all">{t("Приоритет: все")}</option>
             {PRIORITIES.map((p) => <option key={p.key} value={p.key}>{t(p.label)}</option>)}
           </select>
-          <select className="pb-select sm" value={f.status} onChange={(e) => onSetFilter("status", e.target.value)} title={t("Статус")}>
-            <option value="all">{t("Статус: все")}</option>
-            {statuses.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
-          <select className="pb-select sm" value={f.version} onChange={(e) => onSetFilter("version", e.target.value)} title={t("Версия")}>
-            <option value="all">{t("Версия: все")}</option>
-            {versions.map((v) => <option key={v} value={v}>{v}</option>)}
-            {hasBlankVersion && <option value="__none__">{t("(без версии)")}</option>}
-          </select>
+          <div className="pb-taginput-wrap">
+            <button
+              className={"pb-selectlike" + (f.status.length ? " active" : "")}
+              onClick={() => { setStatusFilterOpen((o) => !o); setFiltersOpen(false); setDateOpen(false); setVersionFilterOpen(false); }}
+            >
+              {t("Статус")}{f.status.length ? ` · ${f.status.length}` : `: ${t("все")}`} ▾
+            </button>
+            {statusFilterOpen && (
+              <div className="pb-tagdrop">
+                {statuses.map((s) => (
+                  <button key={s.id} className={"pb-tagopt" + (f.status.includes(s.id) ? " on" : "")} onMouseDown={() => toggleStatusFilter(s.id)}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {statusFilterOpen && <div className="pb-tagscrim" onMouseDown={() => setStatusFilterOpen(false)} />}
+          </div>
+          <div className="pb-taginput-wrap">
+            <button
+              className={"pb-selectlike" + (f.version.length ? " active" : "")}
+              onClick={() => { setVersionFilterOpen((o) => !o); setFiltersOpen(false); setDateOpen(false); setStatusFilterOpen(false); }}
+            >
+              {t("Версия")}{f.version.length ? ` · ${f.version.length}` : `: ${t("все")}`} ▾
+            </button>
+            {versionFilterOpen && (
+              <div className="pb-tagdrop">
+                {versions.map((v) => (
+                  <button key={v} className={"pb-tagopt" + (f.version.includes(v) ? " on" : "")} onMouseDown={() => toggleVersionFilter(v)}>
+                    {v}
+                  </button>
+                ))}
+                {hasBlankVersion && (
+                  <button className={"pb-tagopt" + (f.version.includes("__none__") ? " on" : "")} onMouseDown={() => toggleVersionFilter("__none__")}>
+                    {t("(без версии)")}
+                  </button>
+                )}
+              </div>
+            )}
+            {versionFilterOpen && <div className="pb-tagscrim" onMouseDown={() => setVersionFilterOpen(false)} />}
+          </div>
           <div className="pb-taginput-wrap">
             <button
               className={"pb-selectlike" + ((f.tags || []).length ? " active" : "")}
-              onClick={() => { setFiltersOpen((o) => !o); setDateOpen(false); }}
+              onClick={() => { setFiltersOpen((o) => !o); setDateOpen(false); setStatusFilterOpen(false); setVersionFilterOpen(false); }}
             >
               {t("Теги")}{(f.tags || []).length ? ` · ${f.tags.length}` : ""} ▾
             </button>
@@ -216,11 +256,18 @@ export default function ProjectView({
             )}
             {filtersOpen && <div className="pb-tagscrim" onMouseDown={() => setFiltersOpen(false)} />}
           </div>
-          <input className="pb-fnum" type="number" min="1" placeholder={t("№ задачи")} value={f.num} onChange={(e) => onSetFilter("num", e.target.value)} />
+          <input
+            className="pb-fnum"
+            type="text"
+            inputMode="numeric"
+            placeholder={t("№ задачи (через запятую)")}
+            value={f.num}
+            onChange={(e) => onSetFilter("num", e.target.value)}
+          />
           <div className="pb-taginput-wrap">
             <button
               className={"pb-selectlike" + (dateActive ? " active" : "")}
-              onClick={() => { setDateOpen((o) => !o); setFiltersOpen(false); }}
+              onClick={() => { setDateOpen((o) => !o); setFiltersOpen(false); setStatusFilterOpen(false); setVersionFilterOpen(false); }}
             >
               {dateLabel} ▾
             </button>
@@ -324,6 +371,7 @@ export default function ProjectView({
           currentUid={user.uid}
           onAddMember={onAddMember}
           onRemoveMember={onRemoveMember}
+          isAdmin={isAdmin}
           onClose={() => setSettingsOpen(false)}
         />
       )}

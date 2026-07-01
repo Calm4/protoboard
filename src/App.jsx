@@ -94,17 +94,22 @@ export default function Protoboard() {
   const matchSearch = (t) =>
     !q || (t.title || "").toLowerCase().includes(q) || (t.version || "").toLowerCase().includes(q);
   // Все условия фильтров. Пустые («all»/"") ничего не сужают.
+  // status/version — массивы: пусто = все, иначе должно попасть в список (любое из выбранных).
   const matchFilters = (t) => {
     const f = filters;
     if (!f.showClosed && t.closed) return false;
     if (f.platform !== "all" && t.platform !== f.platform && t.platform !== "both") return false;
     if (f.priority !== "all" && t.priority !== f.priority) return false;
-    if (f.status !== "all" && t.status !== f.status) return false;
-    if (f.version !== "all") {
-      if (f.version === "__none__") { if (t.version) return false; }
-      else if (t.version !== f.version) return false;
+    if (f.status.length > 0 && !f.status.includes(t.status)) return false;
+    if (f.version.length > 0) {
+      const noneMatch = f.version.includes("__none__") && !t.version;
+      const valMatch = t.version && f.version.includes(t.version);
+      if (!noneMatch && !valMatch) return false;
     }
-    if (f.num.trim() !== "" && String(t.num ?? "") !== f.num.trim()) return false;
+    if (f.num.trim() !== "") {
+      const nums = f.num.split(/[,\s]+/).map((n) => n.trim()).filter(Boolean);
+      if (nums.length > 0 && !nums.includes(String(t.num ?? ""))) return false;
+    }
     if (f.tags && f.tags.length > 0 && !f.tags.every((tag) => (t.tags || []).includes(tag))) return false;
     if (f.dateFrom || f.dateTo) {
       if (!t.created) return false;
@@ -362,6 +367,7 @@ export default function Protoboard() {
             users={users}
             onAddMember={(uid) => addMember(openId, uid)}
             onRemoveMember={(uid) => removeMember(openId, uid)}
+            isAdmin={isAdmin}
             allProjects={projects}
             onOpenTaskGlobal={openTaskInProject}
             onOpenProjectGlobal={openProject}

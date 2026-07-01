@@ -196,7 +196,7 @@ export const css = `
 .pb-field { margin-bottom:18px; }
 .pb-field label { display:block; font-family:'Space Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--soft); margin-bottom:7px; }
 .pb-input, .pb-area { width:100%; font-family:'Inter'; font-size:14px; border:1px solid var(--line); border-radius:9px; padding:10px 11px; color:var(--ink); background:var(--surface); resize:vertical; }
-.pb-area { max-height:260px; overflow-y:auto; }
+.pb-area { border-radius:12px; line-height:1.5; min-height:84px; max-height:260px; overflow-y:auto; }
 .pb-input:focus, .pb-area:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
 .pb-input.mono { font-family:'Space Mono'; width:120px; }
 .pb-titleinput { font-family:'Space Grotesk'; font-weight:600; font-size:18px; border:none; width:100%; padding:0; margin:6px 0 16px; color:var(--ink); }

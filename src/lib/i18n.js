@@ -75,6 +75,8 @@ export const EN = {
   "(без версии)": "(no version)",
   "Теги": "Tags",
   "№ задачи": "Task #",
+  "№ задачи (через запятую)": "Task # (comma-separated)",
+  "все": "all",
   "Сегодня": "Today",
   "7д": "7d",
   "30д": "30d",
