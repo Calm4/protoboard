@@ -352,7 +352,10 @@ export default function Protoboard() {
           onRemoveShot={(shotId) => removeShot(openId, taskId, shotId)}
           onAddTag={(tag) => addTag(openId, taskId, tag)}
           onRemoveTag={(tag) => removeTag(openId, taskId, tag)}
-          availableTags={[...new Set([...GLOBAL_TAGS, ...(project?.customTags || [])])]}
+          availableTags={[...new Set([
+            ...GLOBAL_TAGS.filter((t) => !(project?.hiddenTags || []).includes(t)),
+            ...(project?.customTags || []),
+          ])]}
           projectMembers={project?.members || []}
           users={users}
         />

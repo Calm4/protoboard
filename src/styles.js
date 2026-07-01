@@ -61,17 +61,17 @@ export const css = `
 .pb-sectionhead h2 { font-family:'Space Grotesk'; font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--soft); margin:0; }
 .pb-sectionhead .rule { flex:1; height:1px; background:var(--line); }
 
-/* project view */
-.pb-phead { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
-.pb-ptitle { display:flex; align-items:center; gap:11px; }
+/* project view — три колонки: название | переключатель по центру | действия справа */
+.pb-phead { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:14px; margin-bottom:16px; }
+.pb-ptitle { display:flex; align-items:center; gap:11px; justify-self:start; }
 .pb-ptitle h1 { font-family:'Space Grotesk'; font-weight:700; font-size:26px; margin:0; letter-spacing:-.02em; }
 .pb-buildedit { font-family:'Space Mono'; font-size:13px; color:var(--accent); background:var(--accent-soft); border:1px solid transparent; padding:7px 12px; border-radius:8px; min-width:80px; max-width:120px; cursor:text; }
 .pb-buildedit:hover { border-color:var(--accent); }
 .pb-buildedit:focus { outline:none; border-color:var(--accent); background:#fff; }
-.pb-switch { display:inline-flex; background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
+.pb-switch { display:inline-flex; background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; justify-self:center; }
 .pb-switch button { border:none; background:transparent; font-family:'Inter'; font-weight:600; font-size:13px; color:var(--soft); padding:7px 14px; border-radius:7px; cursor:pointer; }
 .pb-switch button.on { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(20,22,31,.10); }
-.pb-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.pb-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-self:end; }
 .pb-controls-sep { width:1px; height:22px; background:var(--line); flex-shrink:0; }
 .pb-search { display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:0 8px; height:36px; }
 .pb-search:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
@@ -187,7 +187,7 @@ export const css = `
 /* panel */
 .pb-scrim { position:fixed; inset:0; background:rgba(15,17,26,.32); z-index:40; animation:pbfade .15s ease; }
 @keyframes pbfade { from { opacity:0 } to { opacity:1 } }
-.pb-panel { position:fixed; top:0; right:0; bottom:0; width:min(440px,92vw); background:var(--surface); z-index:50; box-shadow:-12px 0 40px rgba(15,17,26,.18); padding:24px; overflow-y:auto; animation:pbslide .2s ease; }
+.pb-panel { position:fixed; top:0; right:0; bottom:0; width:min(620px,94vw); background:var(--surface); z-index:50; box-shadow:-12px 0 40px rgba(15,17,26,.18); padding:24px 32px; overflow-y:auto; animation:pbslide .2s ease; }
 @keyframes pbslide { from { transform:translateX(30px); opacity:.4 } to { transform:translateX(0); opacity:1 } }
 .pb-panel .x { float:right; border:none; background:var(--surface2); width:30px; height:30px; border-radius:8px; cursor:pointer; color:var(--soft); font-size:15px; }
 .pb-field { margin-bottom:18px; }
@@ -224,10 +224,8 @@ export const css = `
 .pb-shotadd:hover { color:var(--accent); border-color:var(--accent); }
 .pb-paneldelete { color:#B23636; background:transparent; border:none; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer; margin-top:6px; }
 
-/* редактируемое название проекта (в шапке) */
-.pb-nameedit { font-family:'Space Grotesk'; font-weight:700; font-size:26px; letter-spacing:-.02em; color:var(--ink); border:1px solid transparent; background:transparent; border-radius:8px; padding:2px 6px; margin:-2px -6px; cursor:text; }
-.pb-nameedit:hover { border-color:var(--line); }
-.pb-nameedit:focus { outline:none; border-color:var(--accent); background:#fff; }
+/* название проекта в шапке — статичный текст, правится только в настройках (⚙) */
+.pb-nameedit { font-family:'Space Grotesk'; font-weight:700; font-size:26px; letter-spacing:-.02em; color:var(--ink); }
 
 /* выбор цвета проекта */
 .pb-swatches { display:flex; flex-wrap:wrap; gap:8px; }
@@ -249,7 +247,6 @@ export const css = `
 .pb-modal { position:fixed; z-index:50; top:50%; left:50%; transform:translate(-50%,-50%); width:min(380px,92vw); background:var(--surface); border-radius:16px; padding:22px; box-shadow:0 20px 60px rgba(15,17,26,.28); animation:pbpop .16s ease; }
 @keyframes pbpop { from { transform:translate(-50%,-46%); opacity:.5 } to { transform:translate(-50%,-50%); opacity:1 } }
 .pb-modal h3 { font-family:'Space Grotesk'; font-weight:700; font-size:17px; margin:0 0 16px; }
-.pb-modalfoot { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
 
 .pb-empty { text-align:center; color:var(--soft); padding:40px 16px; font-size:13.5px; }
 .pb-load { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:60vh; color:var(--soft); font-size:14px; text-align:center; }
@@ -356,6 +353,15 @@ export const css = `
 .pb-modal-hint { font-size:13px; color:var(--c-muted); margin:0 0 8px; }
 .pb-modal .pb-input { width:100%; margin-bottom:16px; }
 .pb-modal-foot { display:flex; justify-content:flex-end; gap:10px; }
+
+/* ── Новый проект (модал) ─────────────────────────────────────────────────── */
+.pb-newproj-modal { text-align:center; padding-top:32px; }
+.pb-newproj-modal h3 { margin:0 0 6px; }
+.pb-newproj-modal .pb-modal-desc { margin:0 0 20px; }
+.pb-newproj-modal .pb-field { text-align:left; }
+.pb-newproj-modal .pb-swatches { justify-content:center; }
+.pb-newproj-preview { width:56px; height:56px; border-radius:16px; margin:0 auto 16px; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk'; font-weight:700; font-size:24px; color:#fff; box-shadow:0 8px 20px rgba(20,22,31,.18); transition:background .15s; }
+.pb-input.lg { font-size:16px; padding:12px 14px; }
 
 /* ── Шапка: тема + профиль (общие для главной и экрана проекта) ─────────── */
 .pb-headctrls { display:flex; align-items:center; gap:8px; }
@@ -498,8 +504,9 @@ export const css = `
 }
 @media (max-width:768px){
   /* Шапка проекта */
-  .pb-phead{ flex-direction:column; align-items:flex-start; gap:10px; }
-  .pb-controls{ width:100%; flex-wrap:wrap; gap:6px; }
+  .pb-phead{ grid-template-columns:1fr; justify-items:start; gap:10px; }
+  .pb-switch{ justify-self:stretch; }
+  .pb-controls{ justify-self:stretch; width:100%; flex-wrap:wrap; gap:6px; }
   .pb-search{ flex:1 1 100%; order:-1; }
   .pb-switch{ flex:1 1 auto; }
   .pb-switch button{ padding:6px 10px; font-size:12px; }

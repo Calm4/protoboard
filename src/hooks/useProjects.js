@@ -52,6 +52,7 @@ const rowToProject = (data) => ({
   color: data.color || DEFAULT_COLOR,
   statuses: (data.statuses && data.statuses.length) ? data.statuses : DEFAULT_STATUSES,
   customTags: Array.isArray(data.customTags) ? data.customTags : [],
+  hiddenTags: Array.isArray(data.hiddenTags) ? data.hiddenTags : [],
   gradient: data.gradient || "",
   // undefined = старый проект, участники ещё не мигрированы; [] = легитимно «никого».
   members: Array.isArray(data.members) ? data.members : undefined,
@@ -545,12 +546,23 @@ export function useProjects(enabled = true, currentUser = null) {
     run(updateDoc(doc(db, "projects", pid), { customTags: newCustomTags }));
   };
 
+  // Удалить тег из проекта — стандартный (GLOBAL_TAGS) прячем через hiddenTags
+  // (он общий для всех проектов, поэтому не трогаем сам список, а помечаем «скрыт
+  // именно здесь»), свой (customTags) — удаляем из массива насовсем. В обоих случаях
+  // тег снимается со всех задач проекта, где он был проставлен.
   const removeProjectTag = (pid, tag) => {
     const proj = projects.find((p) => p.id === pid);
     if (!proj) return;
-    const newCustomTags = proj.customTags.filter((t) => t !== tag);
-    patchProjectLocal(pid, (p) => ({ ...p, customTags: newCustomTags }));
-    run(updateDoc(doc(db, "projects", pid), { customTags: newCustomTags }));
+    if (GLOBAL_TAGS.includes(tag)) {
+      if (proj.hiddenTags.includes(tag)) return;
+      const newHidden = [...proj.hiddenTags, tag];
+      patchProjectLocal(pid, (p) => ({ ...p, hiddenTags: newHidden }));
+      run(updateDoc(doc(db, "projects", pid), { hiddenTags: newHidden }));
+    } else {
+      const newCustomTags = proj.customTags.filter((t) => t !== tag);
+      patchProjectLocal(pid, (p) => ({ ...p, customTags: newCustomTags }));
+      run(updateDoc(doc(db, "projects", pid), { customTags: newCustomTags }));
+    }
     proj.tasks.forEach((task) => {
       if (task.tags.includes(tag)) {
         const newTags = task.tags.filter((t) => t !== tag);

@@ -37,7 +37,10 @@ export default function ProjectView({
     (f.tags || []).length > 0,
   ].filter(Boolean).length;
 
-  const allTags = [...new Set([...GLOBAL_TAGS, ...(project.customTags || [])])];
+  const allTags = [...new Set([
+    ...GLOBAL_TAGS.filter((t) => !(project.hiddenTags || []).includes(t)),
+    ...(project.customTags || []),
+  ])];
 
   const toYmd = (d) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -130,26 +133,26 @@ export default function ProjectView({
         <div className="pb-ptitle">
           <span className="pb-nameedit static" title={project.name}>{project.name}</span>
           <EditableInput className="pb-buildedit" value={project.build} title="Версия проекта" onCommit={onSetBuild} />
-          <button className="pb-settingsgear" title="Настройки проекта" onClick={() => setSettingsOpen(true)}>⚙</button>
+        </div>
+        <div className="pb-switch">
+          <button className={view === "stats" ? "on" : ""} onClick={() => onSetView("stats")}>Статистика</button>
+          <button className={view === "board" ? "on" : ""} onClick={() => onSetView("board")}>Доска</button>
+          <button className={view === "list" ? "on" : ""} onClick={() => onSetView("list")}>Список</button>
         </div>
         <div className="pb-controls">
-          <div className="pb-switch">
-            <button className={view === "stats" ? "on" : ""} onClick={() => onSetView("stats")}>Статистика</button>
-            <button className={view === "board" ? "on" : ""} onClick={() => onSetView("board")}>Доска</button>
-            <button className={view === "list" ? "on" : ""} onClick={() => onSetView("list")}>Список</button>
-          </div>
           {view !== "stats" && (
             <>
-              <div className="pb-controls-sep" />
               <button
                 className={"pb-btn sm" + (selectMode ? " primary" : " ghost")}
                 onClick={() => { if (selectMode) exitSelect(); else setSelectMode(true); }}
               >
                 {selectMode ? "Готово" : "Выбрать"}
               </button>
+              <div className="pb-controls-sep" />
             </>
           )}
           <button className="pb-btn primary" onClick={() => { if (view === "stats") onSetView("board"); onAddTask(statuses[0]?.id); }}>+ Задача</button>
+          <button className="pb-settingsgear" title="Настройки проекта" onClick={() => setSettingsOpen(true)}>⚙</button>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { EditableInput } from "./Editable.jsx";
 import ColorSwatches from "./ColorSwatches.jsx";
-import { GRADIENTS } from "../constants.js";
+import { GRADIENTS, GLOBAL_TAGS } from "../constants.js";
 
 // Все настройки проекта в одном месте: название, фон, статусы, теги, участники.
 // Название — осознанно с явной кнопкой «Сохранить», а не авто-коммит по blur.
@@ -100,13 +100,21 @@ export default function ProjectSettingsModal({
         <div className="pb-field">
           <label>Теги проекта</label>
           <div className="pb-tagrow">
+            {GLOBAL_TAGS.filter((t) => !(project.hiddenTags || []).includes(t)).map((tag) => (
+              <span key={tag} className="pb-tag">
+                {tag}
+                <button className="pb-tag-x" onClick={() => onRemoveProjectTag(tag)}>✕</button>
+              </span>
+            ))}
             {(project.customTags || []).map((tag) => (
               <span key={tag} className="pb-tag">
                 {tag}
                 <button className="pb-tag-x" onClick={() => onRemoveProjectTag(tag)}>✕</button>
               </span>
             ))}
-            {(project.customTags || []).length === 0 && <span className="pb-act-row muted">Пока нет своих тегов</span>}
+            {GLOBAL_TAGS.length === (project.hiddenTags || []).length && (project.customTags || []).length === 0 && (
+              <span className="pb-act-row muted">Тегов не осталось</span>
+            )}
           </div>
           <div className="pb-settingsrow" style={{ marginTop: 8 }}>
             <input
