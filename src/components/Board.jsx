@@ -14,7 +14,13 @@ const fmtDate = (s) => {
   return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 };
 
-export default function Board({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onOpenTask, onAddTask, selectMode, selectedIds = new Set(), onToggleSelect, onToggleClosed }) {
+export default function Board({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onOpenTask, onAddTask, selectMode, selectedIds = new Set(), onToggleSelect, onToggleClosed, users = [] }) {
+  const usersByUid = new Map(users.map((u) => [u.uid, u]));
+  const assigneeLabel = (assignee) => {
+    if (!assignee) return "";
+    const u = usersByUid.get(assignee);
+    return u ? (u.displayName || u.email) : assignee;
+  };
   const cardDrag = useRef(null);
   const colDrag = useRef(null);
   const [dragOver, setDragOver] = useState(null);
@@ -140,7 +146,7 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onRe
                       <span className={"pb-prio " + t.priority}>{PRIORITIES.find((p) => p.key === t.priority).label}</span>
                       {t.platform !== "both" && <span className={"pb-plat " + t.platform}>{platLabel(t.platform)}</span>}
                       <span style={{ flex: 1 }} />
-                      {t.assignee && <span className="pb-assignee">@{t.assignee}</span>}
+                      {t.assignee && <span className="pb-assignee">@{assigneeLabel(t.assignee)}</span>}
                       {due && <span className={"pb-due " + due.cls}>{due.label}</span>}
                       {t.version && <span className="pb-verchip">{t.version}</span>}
                       {t.shots.length > 0 && <span className="pb-shot">▦ {t.shots.length}</span>}

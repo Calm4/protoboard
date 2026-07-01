@@ -279,6 +279,7 @@ export default function ProjectView({
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onToggleClosed={onToggleClosed}
+          users={users}
         />
       ) : (
         <TaskList
