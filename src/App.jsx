@@ -98,8 +98,8 @@ export default function Protoboard() {
   const matchFilters = (t) => {
     const f = filters;
     if (!f.showClosed && t.closed) return false;
-    if (f.platform !== "all" && t.platform !== f.platform && t.platform !== "both") return false;
-    if (f.priority !== "all" && t.priority !== f.priority) return false;
+    if (f.platform.length > 0 && !f.platform.includes(t.platform) && t.platform !== "both") return false;
+    if (f.priority.length > 0 && !f.priority.includes(t.priority)) return false;
     if (f.status.length > 0 && !f.status.includes(t.status)) return false;
     if (f.version.length > 0) {
       const noneMatch = f.version.includes("__none__") && !t.version;
@@ -150,7 +150,17 @@ export default function Protoboard() {
   };
   const handleToggleClosed = (tid) => {
     const t = project?.tasks.find((x) => x.id === tid);
-    if (t) editTask(openId, tid, { closed: !t.closed });
+    if (!t) return;
+    const closed = !t.closed;
+    const patch = { closed };
+    if (closed) {
+      const doneId = project.statuses[project.statuses.length - 1]?.id;
+      if (doneId && t.status !== doneId) {
+        patch.status = doneId;
+        patch.completedAt = Date.now();
+      }
+    }
+    editTask(openId, tid, patch);
   };
   const requestJoin = (p) => setJoinConfirm(p);
   const confirmJoin = () => {

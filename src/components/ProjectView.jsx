@@ -7,7 +7,7 @@ import HeaderControls from "./HeaderControls.jsx";
 import GlobalSearch from "./GlobalSearch.jsx";
 import Logo from "./Logo.jsx";
 import ProjectSettingsModal from "./ProjectSettingsModal.jsx";
-import { PRIORITIES, GLOBAL_TAGS, GRADIENTS } from "../constants.js";
+import { PRIORITIES, PLATFORMS, GLOBAL_TAGS, GRADIENTS } from "../constants.js";
 import { useT } from "../lib/i18n.js";
 
 export default function ProjectView({
@@ -25,6 +25,8 @@ export default function ProjectView({
   const [dateOpen, setDateOpen] = useState(false);
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
   const [versionFilterOpen, setVersionFilterOpen] = useState(false);
+  const [platformFilterOpen, setPlatformFilterOpen] = useState(false);
+  const [priorityFilterOpen, setPriorityFilterOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
@@ -38,7 +40,7 @@ export default function ProjectView({
     .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
   const hasBlankVersion = project.tasks.some((t) => !t.version);
   const activeCount = [
-    f.platform !== "all", f.priority !== "all", f.status.length > 0,
+    f.platform.length > 0, f.priority.length > 0, f.status.length > 0,
     f.version.length > 0, f.num.trim() !== "", !!(f.dateFrom || f.dateTo),
     (f.tags || []).length > 0,
   ].filter(Boolean).length;
@@ -70,6 +72,12 @@ export default function ProjectView({
   };
   const toggleVersionFilter = (v) => {
     onSetFilter("version", (cur = []) => (cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]));
+  };
+  const togglePlatformFilter = (k) => {
+    onSetFilter("platform", (cur = []) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
+  };
+  const togglePriorityFilter = (k) => {
+    onSetFilter("priority", (cur = []) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
   };
 
   const toggleSelect = (id) => {
@@ -188,19 +196,46 @@ export default function ProjectView({
 
       {view !== "stats" && (
         <div className="pb-filterbar-inline">
-          <select className="pb-select sm" value={f.platform} onChange={(e) => onSetFilter("platform", e.target.value)} title={t("Платформа")}>
-            <option value="all">{t("Платформа: все")}</option>
-            <option value="ios">iOS</option>
-            <option value="android">Android</option>
-          </select>
-          <select className="pb-select sm" value={f.priority} onChange={(e) => onSetFilter("priority", e.target.value)} title={t("Приоритет")}>
-            <option value="all">{t("Приоритет: все")}</option>
-            {PRIORITIES.map((p) => <option key={p.key} value={p.key}>{t(p.label)}</option>)}
-          </select>
+          <div className="pb-taginput-wrap">
+            <button
+              className={"pb-selectlike" + (f.platform.length ? " active" : "")}
+              onClick={() => { setPlatformFilterOpen((o) => !o); setPriorityFilterOpen(false); setFiltersOpen(false); setDateOpen(false); setStatusFilterOpen(false); setVersionFilterOpen(false); }}
+            >
+              {t("Платформа")}{f.platform.length ? ` · ${f.platform.length}` : `: ${t("все")}`} ▾
+            </button>
+            {platformFilterOpen && (
+              <div className="pb-tagdrop">
+                {PLATFORMS.filter((p) => p.key !== "both").map((p) => (
+                  <button key={p.key} className={"pb-tagopt" + (f.platform.includes(p.key) ? " on" : "")} onMouseDown={() => togglePlatformFilter(p.key)}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {platformFilterOpen && <div className="pb-tagscrim" onMouseDown={() => setPlatformFilterOpen(false)} />}
+          </div>
+          <div className="pb-taginput-wrap">
+            <button
+              className={"pb-selectlike" + (f.priority.length ? " active" : "")}
+              onClick={() => { setPriorityFilterOpen((o) => !o); setPlatformFilterOpen(false); setFiltersOpen(false); setDateOpen(false); setStatusFilterOpen(false); setVersionFilterOpen(false); }}
+            >
+              {t("Приоритет")}{f.priority.length ? ` · ${f.priority.length}` : `: ${t("все")}`} ▾
+            </button>
+            {priorityFilterOpen && (
+              <div className="pb-tagdrop">
+                {PRIORITIES.map((p) => (
+                  <button key={p.key} className={"pb-tagopt" + (f.priority.includes(p.key) ? " on" : "")} onMouseDown={() => togglePriorityFilter(p.key)}>
+                    {t(p.label)}
+                  </button>
+                ))}
+              </div>
+            )}
+            {priorityFilterOpen && <div className="pb-tagscrim" onMouseDown={() => setPriorityFilterOpen(false)} />}
+          </div>
           <div className="pb-taginput-wrap">
             <button
               className={"pb-selectlike" + (f.status.length ? " active" : "")}
-              onClick={() => { setStatusFilterOpen((o) => !o); setFiltersOpen(false); setDateOpen(false); setVersionFilterOpen(false); }}
+              onClick={() => { setStatusFilterOpen((o) => !o); setFiltersOpen(false); setDateOpen(false); setVersionFilterOpen(false); setPlatformFilterOpen(false); setPriorityFilterOpen(false); }}
             >
               {t("Статус")}{f.status.length ? ` · ${f.status.length}` : `: ${t("все")}`} ▾
             </button>
@@ -218,7 +253,7 @@ export default function ProjectView({
           <div className="pb-taginput-wrap">
             <button
               className={"pb-selectlike" + (f.version.length ? " active" : "")}
-              onClick={() => { setVersionFilterOpen((o) => !o); setFiltersOpen(false); setDateOpen(false); setStatusFilterOpen(false); }}
+              onClick={() => { setVersionFilterOpen((o) => !o); setFiltersOpen(false); setDateOpen(false); setStatusFilterOpen(false); setPlatformFilterOpen(false); setPriorityFilterOpen(false); }}
             >
               {t("Версия")}{f.version.length ? ` · ${f.version.length}` : `: ${t("все")}`} ▾
             </button>
@@ -241,7 +276,7 @@ export default function ProjectView({
           <div className="pb-taginput-wrap">
             <button
               className={"pb-selectlike" + ((f.tags || []).length ? " active" : "")}
-              onClick={() => { setFiltersOpen((o) => !o); setDateOpen(false); setStatusFilterOpen(false); setVersionFilterOpen(false); }}
+              onClick={() => { setFiltersOpen((o) => !o); setDateOpen(false); setStatusFilterOpen(false); setVersionFilterOpen(false); setPlatformFilterOpen(false); setPriorityFilterOpen(false); }}
             >
               {t("Теги")}{(f.tags || []).length ? ` · ${f.tags.length}` : ""} ▾
             </button>
@@ -267,7 +302,7 @@ export default function ProjectView({
           <div className="pb-taginput-wrap">
             <button
               className={"pb-selectlike" + (dateActive ? " active" : "")}
-              onClick={() => { setDateOpen((o) => !o); setFiltersOpen(false); setStatusFilterOpen(false); setVersionFilterOpen(false); }}
+              onClick={() => { setDateOpen((o) => !o); setFiltersOpen(false); setStatusFilterOpen(false); setVersionFilterOpen(false); setPlatformFilterOpen(false); setPriorityFilterOpen(false); }}
             >
               {dateLabel} ▾
             </button>

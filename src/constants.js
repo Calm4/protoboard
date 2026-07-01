@@ -28,11 +28,11 @@ export const platLabel = (k) => PLATFORMS.find((p) => p.key === k).label;
 export const prioLabel = (k) => PRIORITIES.find((p) => p.key === k).label;
 
 // Пустой набор фильтров задач (значения «по умолчанию» = ничего не отфильтровано).
-// platform/priority: "all"; status/version: массив — пусто значит «все» (можно
-// выбрать несколько); num: список номеров через запятую/пробел — пусто значит «все»,
+// platform/priority/status/version: массивы — пусто значит «все» (можно выбрать
+// несколько); num: список номеров через запятую/пробел — пусто значит «все»,
 // иначе задача должна попасть в этот список; dateFrom/dateTo: YYYY-MM-DD.
 export const EMPTY_FILTERS = {
-  platform: "all", priority: "all", status: [], version: [],
+  platform: [], priority: [], status: [], version: [],
   num: "", dateFrom: "", dateTo: "", tags: [], showClosed: false,
 };
 
