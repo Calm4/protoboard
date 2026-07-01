@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { PRIORITIES, platLabel } from "../constants.js";
 import { personName, personPosition } from "../lib/people.js";
+import { useT } from "../lib/i18n.js";
 import StatusMenu from "./StatusMenu.jsx";
 
 const dueBadge = (dueDate) => {
@@ -16,6 +17,7 @@ const fmtDate = (s) => {
 };
 
 export default function Board({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onOpenTask, onAddTask, selectMode, selectedIds = new Set(), onToggleSelect, onToggleClosed, users = [] }) {
+  const t = useT();
   const usersByUid = new Map(users.map((u) => [u.uid, u]));
   const assigneeLabel = (assignee) => {
     if (!assignee) return "";
@@ -109,24 +111,24 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onRe
                 <StatusMenu status={s} canDelete={statuses.length > 1} statusActions={statusActions} onClose={() => setMenuFor(null)} />
               )}
 
-              {items.map((t) => {
-                const due = dueBadge(t.dueDate);
-                const selected = selectedIds.has(t.id);
+              {items.map((task) => {
+                const due = dueBadge(task.dueDate);
+                const selected = selectedIds.has(task.id);
                 return (
                   <div
-                    key={t.id}
-                    className={"pb-card" + (hoverCard === t.id ? " dropbefore" : "") + (selected ? " selected" : "") + (t.closed ? " closed" : "")}
+                    key={task.id}
+                    className={"pb-card" + (hoverCard === task.id ? " dropbefore" : "") + (selected ? " selected" : "") + (task.closed ? " closed" : "")}
                     draggable={!selectMode}
-                    onDragStart={() => { if (!selectMode) { cardDrag.current = t.id; colDrag.current = null; } }}
+                    onDragStart={() => { if (!selectMode) { cardDrag.current = task.id; colDrag.current = null; } }}
                     onDragEnd={endDrag}
                     onDragOver={(e) => {
                       if (!cardDrag.current) return;
                       e.preventDefault(); e.stopPropagation();
                       setDragOver(s.id);
-                      if (hoverCard !== t.id) setHoverCard(t.id);
+                      if (hoverCard !== task.id) setHoverCard(task.id);
                     }}
-                    onDrop={(e) => { e.stopPropagation(); handleCardDrop(t); }}
-                    onClick={() => selectMode ? onToggleSelect(t.id) : onOpenTask(t.id)}
+                    onDrop={(e) => { e.stopPropagation(); handleCardDrop(task); }}
+                    onClick={() => selectMode ? onToggleSelect(task.id) : onOpenTask(task.id)}
                   >
                     {selectMode && (
                       <span className={"pb-check" + (selected ? " on" : "")} />
@@ -134,37 +136,37 @@ export default function Board({ tasks, statuses, statusActions, onMoveTask, onRe
                     <div className="pb-card-titlerow">
                       {!selectMode && onToggleClosed && (
                         <button
-                          className={"pb-closebtn" + (t.closed ? " done" : "")}
-                          title={t.closed ? "Открыть задачу" : "Отметить выполненной"}
-                          onClick={(e) => { e.stopPropagation(); onToggleClosed(t.id); }}
+                          className={"pb-closebtn" + (task.closed ? " done" : "")}
+                          title={task.closed ? t("Открыть задачу") : t("Отметить выполненной")}
+                          onClick={(e) => { e.stopPropagation(); onToggleClosed(task.id); }}
                         />
                       )}
-                      <h4>{t.title || <span className="muted">Без названия</span>}</h4>
+                      <h4>{task.title || <span className="muted">{t("Без названия")}</span>}</h4>
                     </div>
-                    {(t.tags || []).length > 0 && (
+                    {(task.tags || []).length > 0 && (
                       <div className="pb-cardtags">
-                        {t.tags.slice(0, 3).map((tag) => <span key={tag} className="pb-tag-sm">{tag}</span>)}
-                        {t.tags.length > 3 && <span className="pb-tag-sm more">+{t.tags.length - 3}</span>}
+                        {task.tags.slice(0, 3).map((tag) => <span key={tag} className="pb-tag-sm">{tag}</span>)}
+                        {task.tags.length > 3 && <span className="pb-tag-sm more">+{task.tags.length - 3}</span>}
                       </div>
                     )}
                     <div className="pb-cardfoot">
-                      {t.num != null && <span className="pb-num">#{t.num}</span>}
-                      <span className={"pb-prio " + t.priority}>{PRIORITIES.find((p) => p.key === t.priority).label}</span>
-                      {t.platform !== "both" && <span className={"pb-plat " + t.platform}>{platLabel(t.platform)}</span>}
+                      {task.num != null && <span className="pb-num">#{task.num}</span>}
+                      <span className={"pb-prio " + task.priority}>{t(PRIORITIES.find((p) => p.key === task.priority).label)}</span>
+                      {task.platform !== "both" && <span className={"pb-plat " + task.platform}>{t(platLabel(task.platform))}</span>}
                       <span style={{ flex: 1 }} />
-                      {t.assignee && <span className="pb-assignee" title={assigneeTitle(t.assignee)}>@{assigneeLabel(t.assignee)}</span>}
+                      {task.assignee && <span className="pb-assignee" title={assigneeTitle(task.assignee)}>@{assigneeLabel(task.assignee)}</span>}
                       {due && <span className={"pb-due " + due.cls}>{due.label}</span>}
-                      {t.version && <span className="pb-verchip">{t.version}</span>}
-                      {t.shots.length > 0 && <span className="pb-shot">▦ {t.shots.length}</span>}
+                      {task.version && <span className="pb-verchip">{task.version}</span>}
+                      {task.shots.length > 0 && <span className="pb-shot">▦ {task.shots.length}</span>}
                     </div>
                   </div>
                 );
               })}
-              <button className="pb-addtask" onClick={() => onAddTask(s.id)}>+ Добавить</button>
+              <button className="pb-addtask" onClick={() => onAddTask(s.id)}>{t("+ Добавить")}</button>
             </div>
           );
         })}
-        <button className="pb-addcol" onClick={statusActions.add} title="Добавить колонку">+ колонка</button>
+        <button className="pb-addcol" onClick={statusActions.add} title={t("Добавить колонку")}>{t("+ колонка")}</button>
       </div>
     </>
   );

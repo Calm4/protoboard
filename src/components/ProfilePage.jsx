@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { POSITIONS } from "../constants.js";
 import { personName } from "../lib/people.js";
+import { useT } from "../lib/i18n.js";
 
 // Полноэкранная страница профиля (не поп-ап): аватар, редактируемые имя/должность,
 // роль, «мои проекты» и «мои задачи» на всю ширину, выход.
 export default function ProfilePage({
   user, role, customName, position, onSaveProfile, onSignOut, onBack,
-  isDark, onToggleDark, projects = [], onOpenProject, onOpenTask,
+  isDark, onToggleDark, lang, onToggleLang, projects = [], onOpenProject, onOpenTask,
 }) {
-  const roleLabel = role === "admin" ? "Администратор" : "Участник";
+  const t = useT();
+  const roleLabel = role === "admin" ? t("Администратор") : t("Участник");
   const [name, setName] = useState(customName || "");
   const [pos, setPos] = useState(position || "");
   useEffect(() => { setName(customName || ""); }, [customName]);
@@ -31,12 +33,20 @@ export default function ProfilePage({
   return (
     <>
       <div className="pb-top">
-        <div className="pb-brand pb-projectbrand" onClick={onBack} title="На главную">
+        <div className="pb-brand pb-projectbrand" onClick={onBack} title={t("На главную")}>
           <span className="pb-logo">Proto<b>board</b></span>
         </div>
-        <button className="pb-darktoggle" title="Сменить тему" onClick={onToggleDark}>
-          {isDark ? "☀" : "☾"}
-        </button>
+        <span />
+        <div style={{ justifySelf: "end", display: "flex", gap: 8 }}>
+          {onToggleLang && (
+            <button className="pb-darktoggle pb-langtoggle" title={t("Сменить язык")} onClick={onToggleLang}>
+              {lang === "en" ? "EN" : "RU"}
+            </button>
+          )}
+          <button className="pb-darktoggle" title={t("Сменить тему")} onClick={onToggleDark}>
+            {isDark ? "☀" : "☾"}
+          </button>
+        </div>
       </div>
 
       <div className="pb-profilepage">
@@ -53,16 +63,16 @@ export default function ProfilePage({
         </div>
 
         <div className="pb-field">
-          <label>Имя</label>
+          <label>{t("Имя")}</label>
           <input
             className="pb-input"
-            placeholder={user.displayName || "Имя"}
+            placeholder={user.displayName || t("Имя")}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
         <div className="pb-field">
-          <label>Должность</label>
+          <label>{t("Должность")}</label>
           <div className="pb-poschips">
             {POSITIONS.map((p) => (
               <button
@@ -81,41 +91,41 @@ export default function ProfilePage({
             className="pb-btn primary"
             onClick={() => onSaveProfile({ customName: name.trim(), position: pos })}
           >
-            Сохранить
+            {t("Сохранить")}
           </button>
         )}
 
         <div className="pb-field" style={{ marginTop: 28 }}>
-          <label>Мои проекты ({myProjects.length})</label>
+          <label>{t("Мои проекты")} ({myProjects.length})</label>
           <div className="pb-profilelist">
             {myProjects.length === 0 ? (
-              <div className="pb-act-row muted">Пока нет своих проектов</div>
+              <div className="pb-act-row muted">{t("Пока нет своих проектов")}</div>
             ) : myProjects.map((p) => (
               <button key={p.id} className="pb-act-row pb-act-row-btn" onClick={() => goProject(p.id)}>
                 <span className="pb-act-action">
                   <span className="pb-gsdot" style={{ background: p.color }} /> {p.name}
                 </span>
-                <span className="pb-act-time">{p.tasks.length} задач</span>
+                <span className="pb-act-time">{p.tasks.length} {t("задач")}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div className="pb-field">
-          <label>Мои задачи ({myTasks.length})</label>
+          <label>{t("Мои задачи")} ({myTasks.length})</label>
           <div className="pb-profilelist">
             {myTasks.length === 0 ? (
-              <div className="pb-act-row muted">Нет назначенных задач</div>
-            ) : myTasks.map((t) => (
-              <button key={t.id} className="pb-act-row pb-act-row-btn" onClick={() => goTask(t.projectId, t.id)}>
-                <span className="pb-act-action">{t.title}</span>
-                <span className="pb-act-time">{t.projectName}</span>
+              <div className="pb-act-row muted">{t("Нет назначенных задач")}</div>
+            ) : myTasks.map((task) => (
+              <button key={task.id} className="pb-act-row pb-act-row-btn" onClick={() => goTask(task.projectId, task.id)}>
+                <span className="pb-act-action">{task.title}</span>
+                <span className="pb-act-time">{task.projectName}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <button className="pb-btn danger" style={{ marginTop: 24 }} onClick={onSignOut}>Выйти</button>
+        <button className="pb-btn danger" style={{ marginTop: 24 }} onClick={onSignOut}>{t("Выйти")}</button>
       </div>
     </>
   );

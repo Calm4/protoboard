@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useT } from "../lib/i18n.js";
 
 // "На удержании" статусы — не идут в "открытые"
 const isHoldStatus = (label) => {
@@ -12,6 +13,7 @@ const isHoldStatus = (label) => {
 };
 
 export default function StatsView({ project }) {
+  const t = useT();
   const tasks = project.tasks;
 
   const stats = useMemo(() => {
@@ -60,15 +62,15 @@ export default function StatsView({ project }) {
     <div className="pb-stats">
       {/* Сводка */}
       <div className="pb-stat-cards">
-        <StatCard value={stats.total} label="Всего задач" />
-        <StatCard value={stats.open} label="Открытых" />
-        <StatCard value={stats.held} label="На удержании" />
-        <StatCard value={stats.done} label="Готово" accent />
+        <StatCard value={stats.total} label={t("Всего задач")} />
+        <StatCard value={stats.open} label={t("Открытых")} />
+        <StatCard value={stats.held} label={t("На удержании")} />
+        <StatCard value={stats.done} label={t("Готово")} accent />
       </div>
 
       {/* По статусам */}
       <div className="pb-stat-section">
-        <div className="pb-stat-head">По статусам</div>
+        <div className="pb-stat-head">{t("По статусам")}</div>
         {project.statuses.map((s) => {
           const count = stats.byStatus[s.id] || 0;
           const pct = stats.total ? (count / stats.total) * 100 : 0;
@@ -87,25 +89,25 @@ export default function StatsView({ project }) {
       {/* Приоритет + Платформа */}
       <div className="pb-stat-2col">
         <div className="pb-stat-section">
-          <div className="pb-stat-head">Приоритет</div>
-          <PrioRow label="Высокий" count={stats.byPrio.high} color="#B23636" />
-          <PrioRow label="Средний" count={stats.byPrio.med} color="#C8932A" />
-          <PrioRow label="Низкий" count={stats.byPrio.low} color="#4B9C5E" />
+          <div className="pb-stat-head">{t("Приоритет")}</div>
+          <PrioRow label={t("Высокий")} count={stats.byPrio.high} color="#B23636" />
+          <PrioRow label={t("Средний")} count={stats.byPrio.med} color="#C8932A" />
+          <PrioRow label={t("Низкий")} count={stats.byPrio.low} color="#4B9C5E" />
         </div>
         <div className="pb-stat-section">
-          <div className="pb-stat-head">Платформа</div>
+          <div className="pb-stat-head">{t("Платформа")}</div>
           <PrioRow label="iOS" count={stats.byPlat.ios} color="#2C5BB5" />
           <PrioRow label="Android" count={stats.byPlat.android} color="#1C7A4A" />
-          <PrioRow label="Общая" count={stats.byPlat.both} color="#7C8499" />
+          <PrioRow label={t("Общая")} count={stats.byPlat.both} color="#7C8499" />
         </div>
       </div>
 
       {/* График: создано vs выполнено */}
       <div className="pb-stat-section">
         <div className="pb-stat-head pb-stat-head-legend">
-          Активность за 30 дней
-          <span className="pb-stat-leg"><span className="dot" style={{ background: "var(--accent)" }} />Создано</span>
-          <span className="pb-stat-leg"><span className="dot" style={{ background: "#16A06A" }} />Выполнено</span>
+          {t("Активность за 30 дней")}
+          <span className="pb-stat-leg"><span className="dot" style={{ background: "var(--accent)" }} />{t("Создано")}</span>
+          <span className="pb-stat-leg"><span className="dot" style={{ background: "#16A06A" }} />{t("Выполнено")}</span>
         </div>
         <DualSparkline created={stats.created} completed={stats.completed} />
       </div>

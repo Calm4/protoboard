@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { personName, personPosition } from "../lib/people.js";
+import { useT } from "../lib/i18n.js";
 
 // Модалка участников проекта: список текущих (с удалением) + поиск и добавление
 // новых из общего каталога пользователей (users).
 export default function MembersModal({ members, users, currentUid, onAdd, onRemove, onClose }) {
+  const t = useT();
   const [search, setSearch] = useState("");
   const memberSet = new Set(members || []);
   const memberUsers = (users || []).filter((u) => memberSet.has(u.uid));
@@ -21,10 +23,10 @@ export default function MembersModal({ members, users, currentUid, onAdd, onRemo
       <div className="pb-scrim" onClick={onClose} />
       <div className="pb-modal pb-members-modal">
         <button className="x" onClick={onClose}>✕</button>
-        <h3>Участники проекта</h3>
+        <h3>{t("Участники проекта")}</h3>
 
         <div className="pb-memberlist">
-          {memberUsers.length === 0 && <div className="pb-act-row muted">Пока никого</div>}
+          {memberUsers.length === 0 && <div className="pb-act-row muted">{t("Пока никого")}</div>}
           {memberUsers.map((u) => (
             <div key={u.uid} className="pb-memberrow">
               {u.photoURL
@@ -39,24 +41,24 @@ export default function MembersModal({ members, users, currentUid, onAdd, onRemo
                 <div className="pb-memberemail">{u.email}</div>
               </div>
               <button className="pb-tag-x" onClick={() => onRemove(u.uid)}>
-                {u.uid === currentUid ? "Покинуть" : "✕"}
+                {u.uid === currentUid ? t("Покинуть") : "✕"}
               </button>
             </div>
           ))}
         </div>
 
         <div className="pb-field">
-          <label>Добавить участника</label>
+          <label>{t("Добавить участника")}</label>
           <input
             className="pb-input"
-            placeholder="Имя или почта…"
+            placeholder={t("Имя или почта…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           {q && (
             <div className="pb-memberadd-list">
               {candidates.length === 0 ? (
-                <div className="pb-act-row muted">Никого не найдено</div>
+                <div className="pb-act-row muted">{t("Никого не найдено")}</div>
               ) : candidates.map((u) => (
                 <button
                   key={u.uid}

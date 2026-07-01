@@ -29,7 +29,8 @@ export const css = `
 .pb.dark .pb-panel { box-shadow:-8px 0 32px rgba(0,0,0,.4); }
 .pb-wrap { max-width:100%; margin:0; padding:26px clamp(22px, 3vw, 56px) 80px; }
 
-.pb-top { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:8px; }
+.pb-top { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:14px; margin-bottom:8px; }
+.pb-top > .pb-brand { justify-self:start; }
 .pb-brand { display:flex; align-items:baseline; gap:10px; }
 .pb-logo { font-family:'Space Grotesk'; font-weight:700; font-size:22px; letter-spacing:-.02em; }
 .pb-logo b { color:var(--accent); }
@@ -203,6 +204,17 @@ export const css = `
 .pb-titlearea:focus { outline:none; border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px var(--accent-soft); }
 .pb-seg { display:flex; gap:6px; flex-wrap:wrap; }
 .pb-seg button { border:1px solid var(--line); background:var(--surface); padding:7px 12px; border-radius:8px; font-family:'Inter'; font-weight:600; font-size:12.5px; color:var(--soft); cursor:pointer; }
+.pb-seg.compact button { padding:5px 10px; font-size:12px; }
+
+/* ── Таблица свойств задачи (label слева / значение справа), как в Asana ─── */
+.pb-fields { border:1px solid var(--line); border-radius:12px; padding:0 14px; margin-bottom:22px; }
+.pb-fieldrow { display:flex; align-items:center; gap:14px; padding:11px 0; border-bottom:1px solid var(--line); }
+.pb-fieldrow:last-child { border-bottom:none; }
+.pb-fieldrow-lbl { width:100px; flex-shrink:0; font-size:12.5px; color:var(--c-muted); font-weight:500; }
+.pb-fieldrow-val { flex:1; min-width:0; }
+.pb-fieldrow-val .pb-input, .pb-fieldrow-val .pb-select { width:auto; }
+.pb-fieldrow-val .pb-assignee-btn { width:auto; }
+.pb-panel-section { margin-top:24px; }
 .pb-seg button.on { color:#fff; }
 .pb-seg button.on.s-todo { background:var(--todo); border-color:var(--todo); }
 .pb-seg button.on.s-check { background:var(--check); border-color:var(--check); }
@@ -279,8 +291,13 @@ export const css = `
 .pb-searchrow .pb-search { max-width:100%; }
 
 /* ── Глобальный поиск ────────────────────────────────────────────────────── */
-.pb-gsearch-wrap { position:relative; margin-bottom:12px; }
 .pb-gsresults { position:absolute; top:calc(100% + 4px); left:0; z-index:220; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.14); width:100%; max-width:460px; max-height:320px; overflow-y:auto; }
+
+/* ── Единый поиск в шапке (GlobalSearch) ─────────────────────────────────── */
+.pb-topsearch-slot { position:relative; justify-self:center; width:100%; max-width:380px; }
+.pb-topsearch { width:100%; }
+.pb-topsearch input { width:100%; }
+.pb-gsresults-top { left:50%; transform:translateX(-50%); width:min(460px,90vw); }
 .pb-gsrow { display:flex; align-items:center; gap:7px; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:9px 12px; color:var(--text); font-size:13px; }
 .pb-gsrow:hover { background:var(--surface2); }
 .pb-gsdot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }

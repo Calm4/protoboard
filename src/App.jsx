@@ -12,6 +12,7 @@ import NewProjectModal from "./components/NewProjectModal.jsx";
 import DeleteProjectModal from "./components/DeleteProjectModal.jsx";
 import LoginScreen from "./components/LoginScreen.jsx";
 import OnboardingModal from "./components/OnboardingModal.jsx";
+import { LangContext, EN } from "./lib/i18n.js";
 
 // Главный компонент. Держит «состояние интерфейса» (что открыто, какой вид,
 // какой фильтр), а все данные и операции над ними берёт из useProjects().
@@ -64,6 +65,15 @@ export default function Protoboard() {
   const [dark, setDark] = useState(() => localStorage.getItem("pb-dark") === "1");
   const [profileOpen, setProfileOpen] = useState(false);
   const [onboardOpen, setOnboardOpen] = useState(false);
+  const [joinConfirm, setJoinConfirm] = useState(null); // проект, который спросим подтвердить
+  const [lang, setLang] = useState(() => localStorage.getItem("pb-lang") || "ru");
+  const t = (str) => (lang === "en" ? (EN[str] ?? str) : str);
+
+  const toggleLang = () => setLang((l) => {
+    const next = l === "ru" ? "en" : "ru";
+    localStorage.setItem("pb-lang", next);
+    return next;
+  });
 
   // Онбординг (имя + должность) — один раз, сразу после создания профиля при первом входе.
   useEffect(() => { if (justCreated) setOnboardOpen(true); }, [justCreated]);
@@ -136,6 +146,12 @@ export default function Protoboard() {
   const handleToggleClosed = (tid) => {
     const t = project?.tasks.find((x) => x.id === tid);
     if (t) editTask(openId, tid, { closed: !t.closed });
+  };
+  const requestJoin = (p) => setJoinConfirm(p);
+  const confirmJoin = () => {
+    const p = joinConfirm;
+    setJoinConfirm(null);
+    if (p) { joinProject(p.id); openProject(p.id); }
   };
 
   // ── Навигация через браузерную историю (Назад / Вперёд) ─────────────────────
@@ -228,7 +244,7 @@ export default function Protoboard() {
       if (editable) return;
       e.preventDefault();
       const label = await undo();
-      flashToast(label ? `Отменено: ${label}` : "Нечего отменять");
+      flashToast(label ? `${t("Отменено: ")}${label}` : t("Нечего отменять"));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -246,15 +262,16 @@ export default function Protoboard() {
   const shell = (content) => (
     <div className="pb"><style>{css}</style><div className="pb-wrap">{content}</div></div>
   );
-  if (loadState === "loading") return shell(<div className="pb-load">Загрузка…</div>);
+  if (loadState === "loading") return shell(<div className="pb-load">{t("Загрузка…")}</div>);
   if (loadState === "error") return shell(
     <div className="pb-load">
-      <div>Не удалось связаться с базой. Похоже, на секунду пропала сеть.</div>
-      <button className="pb-btn primary" onClick={reload}>Повторить</button>
+      <div>{t("Не удалось связаться с базой. Похоже, на секунду пропала сеть.")}</div>
+      <button className="pb-btn primary" onClick={reload}>{t("Повторить")}</button>
     </div>
   );
 
   return (
+    <LangContext.Provider value={lang}>
     <div className={"pb" + (dark ? " dark" : "")}>
       <style>{css}</style>
       <div className="pb-wrap">
@@ -269,6 +286,8 @@ export default function Protoboard() {
             onBack={closeProfile}
             isDark={dark}
             onToggleDark={toggleDark}
+            lang={lang}
+            onToggleLang={toggleLang}
             projects={projects}
             onOpenProject={openProjectFromProfile}
             onOpenTask={openTaskFromProfile}
@@ -287,13 +306,15 @@ export default function Protoboard() {
             onOpenTask={openTaskInProject}
             isDark={dark}
             onToggleDark={toggleDark}
+            lang={lang}
+            onToggleLang={toggleLang}
             onSetGradient={(pid, grad) => setGradient(pid, grad)}
             onDeleteProject={(pid) => setDeletingProjId(pid)}
             user={user}
             customName={customName}
             onOpenProfile={openProfile}
             isAdmin={isAdmin}
-            onJoinProject={joinProject}
+            onRequestJoin={requestJoin}
           />
         ) : (
           <ProjectView
@@ -333,12 +354,18 @@ export default function Protoboard() {
             onDeleteTask={(tid) => { deleteTask(openId, tid); if (taskId === tid) setTaskId(null); }}
             isDark={dark}
             onToggleDark={toggleDark}
+            lang={lang}
+            onToggleLang={toggleLang}
             user={user}
             customName={customName}
             onOpenProfile={openProfile}
             users={users}
             onAddMember={(uid) => addMember(openId, uid)}
             onRemoveMember={(uid) => removeMember(openId, uid)}
+            allProjects={projects}
+            onOpenTaskGlobal={openTaskInProject}
+            onOpenProjectGlobal={openProject}
+            onRequestJoin={requestJoin}
           />
         )}
       </div>
@@ -400,8 +427,27 @@ export default function Protoboard() {
         />
       )}
 
+      {/* Подтверждение присоединения к проекту (клик по чужому проекту где угодно на сайте) */}
+      {joinConfirm && (
+        <>
+          <div className="pb-scrim" onClick={() => setJoinConfirm(null)} />
+          <div className="pb-modal">
+            <button className="x" onClick={() => setJoinConfirm(null)}>✕</button>
+            <h2 className="pb-modal-title">{t("Присоединиться к проекту?")}</h2>
+            <p className="pb-modal-desc">
+              {t("Ты пока не участник «")}<b>{joinConfirm.name}</b>{t("». Присоединиться, чтобы открыть его?")}
+            </p>
+            <div className="pb-modal-foot">
+              <button className="pb-btn ghost" onClick={() => setJoinConfirm(null)}>{t("Отмена")}</button>
+              <button className="pb-btn primary" onClick={confirmJoin}>{t("Присоединиться")}</button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Уведомление об отмене действия */}
       {toast && <div className="pb-toast">{toast}</div>}
     </div>
+    </LangContext.Provider>
   );
 }

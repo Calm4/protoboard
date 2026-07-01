@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { personName, personPosition } from "../lib/people.js";
+import { useT } from "../lib/i18n.js";
 
 // Поле «Исполнитель»: выпадающий список с поиском по участникам проекта.
 // Хранит uid выбранного участника. Старые значения (свободный текст, введённый
 // до этой фичи) не резолвятся ни в одного участника — показываются как есть.
 export default function AssigneePicker({ value, projectMembers, users, onChange }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
 
@@ -34,7 +36,7 @@ export default function AssigneePicker({ value, projectMembers, users, onChange 
         ) : value ? (
           <span>{value}</span>
         ) : (
-          <span className="muted">Без исполнителя</span>
+          <span className="muted">{t("Без исполнителя")}</span>
         )}
       </button>
 
@@ -43,18 +45,18 @@ export default function AssigneePicker({ value, projectMembers, users, onChange 
           <input
             className="pb-taginput"
             autoFocus
-            placeholder="Поиск участника…"
+            placeholder={t("Поиск участника…")}
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <button className="pb-tagopt" onMouseDown={() => pick("")}>Без исполнителя</button>
+          <button className="pb-tagopt" onMouseDown={() => pick("")}>{t("Без исполнителя")}</button>
           {filtered.map((u) => (
             <button key={u.uid} className="pb-tagopt" onMouseDown={() => pick(u.uid)}>
               {personName(u)}
               {personPosition(u) && <span className="pb-memberposition"> · {personPosition(u)}</span>}
             </button>
           ))}
-          {filtered.length === 0 && <div className="pb-act-row muted">В проекте нет участников</div>}
+          {filtered.length === 0 && <div className="pb-act-row muted">{t("В проекте нет участников")}</div>}
         </div>
       )}
       {open && <div className="pb-tagscrim" onMouseDown={() => setOpen(false)} />}
