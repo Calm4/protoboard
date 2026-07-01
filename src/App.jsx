@@ -106,7 +106,10 @@ export default function Protoboard() {
   };
   const visibleTasks = project ? project.tasks.filter((t) => matchFilters(t) && matchSearch(t)) : [];
 
-  const setFilter = (key, val) => setFilters((f) => ({ ...f, [key]: val }));
+  // val может быть функцией (prevVal) => newVal — нужно для тегов, где два быстрых
+  // клика подряд иначе бы схлопывались в один (оба вычисляли новое значение от одного
+  // и того же «устаревшего» f.tags, если React успевал не перерендерить между кликами).
+  const setFilter = (key, val) => setFilters((f) => ({ ...f, [key]: typeof val === "function" ? val(f[key]) : val }));
   const resetFilters = () => setFilters(EMPTY_FILTERS);
 
   // Действия, связывающие интерфейс с данными.
@@ -129,6 +132,10 @@ export default function Protoboard() {
   const handleCreateProject = () => {
     const p = createProject(newProj.name, newProj.color);
     if (p) setNewProj(null);
+  };
+  const handleToggleClosed = (tid) => {
+    const t = project?.tasks.find((x) => x.id === tid);
+    if (t) editTask(openId, tid, { closed: !t.closed });
   };
 
   // ── Навигация через браузерную историю (Назад / Вперёд) ─────────────────────
@@ -309,10 +316,7 @@ export default function Protoboard() {
             onReorderTask={(dragId, status, beforeId) => reorderTask(openId, dragId, status, beforeId)}
             onSetPriority={(tid, priority) => editTask(openId, tid, { priority })}
             onSetPlatform={(tid, platform) => editTask(openId, tid, { platform })}
-            onToggleClosed={(tid) => {
-              const t = project?.tasks.find((x) => x.id === tid);
-              if (t) editTask(openId, tid, { closed: !t.closed });
-            }}
+            onToggleClosed={handleToggleClosed}
             onOpenTask={(tid) => {
               setTaskId(tid);
               if (tid && openId) { loadShots(openId, tid); loadActivity(openId, tid); }
@@ -358,6 +362,7 @@ export default function Protoboard() {
           ])]}
           projectMembers={project?.members || []}
           users={users}
+          onToggleClosed={handleToggleClosed}
         />
       )}
 

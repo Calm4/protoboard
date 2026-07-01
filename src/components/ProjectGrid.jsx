@@ -19,6 +19,7 @@ export default function ProjectGrid({
 }) {
   const [gSearch, setGSearch] = useState("");
   const [gOpen, setGOpen] = useState(false);
+  const [joinConfirm, setJoinConfirm] = useState(null); // проект, который спросим подтвердить
 
   const uid = user.uid;
   // members === undefined — старый проект, ещё не мигрирован (см. App.jsx): пока
@@ -27,6 +28,14 @@ export default function ProjectGrid({
   const myActive = active.filter(isMember);
   const discoverable = active.filter((p) => !isMember(p));
   const myArchived = archived.filter(isMember);
+  const discoverableArchived = archived.filter((p) => !isMember(p));
+
+  const requestJoin = (p) => setJoinConfirm(p);
+  const confirmJoin = () => {
+    const p = joinConfirm;
+    setJoinConfirm(null);
+    if (p) { onJoinProject(p.id); onOpen(p.id); }
+  };
 
   const globalStats = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -68,8 +77,8 @@ export default function ProjectGrid({
   };
   const handleProjectResultClick = (p) => {
     setGSearch(""); setGOpen(false);
-    if (!isMember(p)) onJoinProject(p.id);
-    onOpen(p.id);
+    if (!isMember(p)) requestJoin(p);
+    else onOpen(p.id);
   };
 
   return (
@@ -200,10 +209,10 @@ export default function ProjectGrid({
                   key={p.id}
                   className={"pb-proj" + (hasGrad ? " has-gradient" : "")}
                   style={hasGrad ? { background: p.gradient } : undefined}
-                  onClick={() => { onJoinProject(p.id); onOpen(p.id); }}
+                  onClick={() => requestJoin(p)}
                 >
                   {!hasGrad && <span className="accentbar" style={{ background: p.color }} />}
-                  <button className="pb-arch-btn static" onClick={(e) => { e.stopPropagation(); onJoinProject(p.id); onOpen(p.id); }}>
+                  <button className="pb-arch-btn static" onClick={(e) => { e.stopPropagation(); requestJoin(p); }}>
                     Присоединиться
                   </button>
                   <h3>{p.name}</h3>
@@ -217,11 +226,11 @@ export default function ProjectGrid({
         </>
       )}
 
-      {/* Архив (только мои архивные проекты) */}
-      {myArchived.length > 0 && (
+      {/* Архив (мои архивные проекты + чужие, к которым можно присоединиться) */}
+      {(myArchived.length > 0 || discoverableArchived.length > 0) && (
         <>
           <div className="pb-sectionhead">
-            <h2>Архив ({myArchived.length})</h2>
+            <h2>Архив ({myArchived.length + discoverableArchived.length})</h2>
             <span className="rule" />
             <button className="pb-btn ghost sm" onClick={onToggleArchived}>{showArchived ? "Скрыть" : "Показать"}</button>
           </div>
@@ -246,8 +255,44 @@ export default function ProjectGrid({
                 </div>
                 );
               })}
+              {discoverableArchived.map((p) => {
+                const hasGrad = !!p.gradient;
+                return (
+                <div
+                  key={p.id}
+                  className={"pb-proj" + (hasGrad ? " has-gradient" : "")}
+                  style={{ opacity: .68, ...(hasGrad ? { background: p.gradient } : {}) }}
+                  onClick={() => requestJoin(p)}
+                >
+                  {!hasGrad && <span className="accentbar" style={{ background: p.color }} />}
+                  <button className="pb-arch-btn static" onClick={(e) => { e.stopPropagation(); requestJoin(p); }}>
+                    Присоединиться
+                  </button>
+                  <h3>{p.name}</h3>
+                  <div className="pb-meta"><span className="pb-build">{p.build}</span> · {p.tasks.length} задач</div>
+                </div>
+                );
+              })}
             </div>
           )}
+        </>
+      )}
+
+      {/* Подтверждение присоединения к проекту */}
+      {joinConfirm && (
+        <>
+          <div className="pb-scrim" onClick={() => setJoinConfirm(null)} />
+          <div className="pb-modal">
+            <button className="x" onClick={() => setJoinConfirm(null)}>✕</button>
+            <h2 className="pb-modal-title">Присоединиться к проекту?</h2>
+            <p className="pb-modal-desc">
+              Ты пока не участник «<b>{joinConfirm.name}</b>». Присоединиться, чтобы открыть его?
+            </p>
+            <div className="pb-modal-foot">
+              <button className="pb-btn ghost" onClick={() => setJoinConfirm(null)}>Отмена</button>
+              <button className="pb-btn primary" onClick={confirmJoin}>Присоединиться</button>
+            </div>
+          </div>
         </>
       )}
     </>

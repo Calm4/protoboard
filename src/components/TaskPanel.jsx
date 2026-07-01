@@ -6,7 +6,7 @@ import { downloadImage } from "../lib/image.js";
 
 export default function TaskPanel({
   task, statuses, onClose, onEdit, onMoveTask, onDelete, onAddShots, onRemoveShot,
-  onAddTag, onRemoveTag, availableTags = [], projectMembers = [], users = [],
+  onAddTag, onRemoveTag, availableTags = [], projectMembers = [], users = [], onToggleClosed,
 }) {
   const fileRef = useRef(null);
   const [zoom, setZoom] = useState(null);
@@ -52,6 +52,16 @@ export default function TaskPanel({
           <button className="pb-copylink" onClick={copyLink} title="Ссылка на этот баг">
             {copied ? "Ссылка скопирована ✓" : "🔗 Скопировать ссылку"}
           </button>
+          {onToggleClosed && (
+            <button
+              className={"pb-taskdone-btn" + (task.closed ? " done" : "")}
+              onClick={() => onToggleClosed(task.id)}
+              title={task.closed ? "Открыть задачу" : "Отметить выполненной"}
+            >
+              <span className={"pb-closebtn" + (task.closed ? " done" : "")} />
+              {task.closed ? "Выполнено" : "Отметить выполненной"}
+            </button>
+          )}
         </div>
         <EditableTextarea
           className="pb-titlearea"

@@ -8,7 +8,7 @@ import StatusMenu from "./StatusMenu.jsx";
 // полю; повторный клик по той же колонке меняет порядок групп (▲/▼).
 // Перетаскивание задач работает только в группировке по статусу (там это перенос между
 // колонками); в остальных группировках строки не таскаются — это режим просмотра.
-export default function TaskList({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onSetPriority, onSetPlatform, onOpenTask, selectMode, selectedIds = new Set(), onToggleSelect, onToggleClosed }) {
+export default function TaskList({ tasks, statuses, statusActions, onMoveTask, onReorderTask, onSetPriority, onSetPlatform, onOpenTask, selectMode, selectedIds = new Set(), onToggleSelect, onToggleClosed, hideEmptyGroups = false }) {
   const dragId = useRef(null);
   const [dragOver, setDragOver] = useState(null);
   const [dropRow, setDropRow] = useState(null);
@@ -48,6 +48,7 @@ export default function TaskList({ tasks, statuses, statusActions, onMoveTask, o
     return groups;
   };
   const groups = buildGroups();
+  const visibleGroups = hideEmptyGroups ? groups.filter((g) => g.items.length > 0) : groups;
 
   // Кликабельный заголовок колонки со стрелкой направления.
   const hdr = (field, label, cls) => (
@@ -71,7 +72,7 @@ export default function TaskList({ tasks, statuses, statusActions, onMoveTask, o
         {hdr("status", "Статус")}
       </div>
 
-      {groups.map((g) => (
+      {visibleGroups.map((g) => (
         <div
           key={g.key}
           className={"pb-listgroup" + (byStatus && dragOver === g.key ? " over" : "")}

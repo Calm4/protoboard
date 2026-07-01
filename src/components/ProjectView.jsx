@@ -18,6 +18,7 @@ export default function ProjectView({
 }) {
   const statuses = project.statuses;
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
@@ -50,9 +51,14 @@ export default function ProjectView({
     from.setDate(from.getDate() - (days - 1));
     onSetFilter("dateFrom", toYmd(from)); onSetFilter("dateTo", toYmd(to));
   };
+  const dateActive = !!(f.dateFrom || f.dateTo);
+  const dateLabel = !dateActive
+    ? "Дата: все"
+    : f.dateFrom && f.dateTo
+      ? `${f.dateFrom} → ${f.dateTo}`
+      : f.dateFrom ? `С ${f.dateFrom}` : `По ${f.dateTo}`;
   const toggleTagFilter = (tag) => {
-    const cur = f.tags || [];
-    onSetFilter("tags", cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag]);
+    onSetFilter("tags", (cur = []) => (cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag]));
   };
 
   const toggleSelect = (id) => {
@@ -168,13 +174,11 @@ export default function ProjectView({
 
       {view !== "stats" && (
         <div className="pb-filterbar-inline">
-          <div className="pb-chips">
-            {["all", "ios", "android"].map((v) => (
-              <button key={v} className={"pb-chip" + (f.platform === v ? " on" : "")} onClick={() => onSetFilter("platform", v)}>
-                {v === "all" ? "Все" : v === "ios" ? "iOS" : "Android"}
-              </button>
-            ))}
-          </div>
+          <select className="pb-select sm" value={f.platform} onChange={(e) => onSetFilter("platform", e.target.value)} title="Платформа">
+            <option value="all">Платформа: все</option>
+            <option value="ios">iOS</option>
+            <option value="android">Android</option>
+          </select>
           <select className="pb-select sm" value={f.priority} onChange={(e) => onSetFilter("priority", e.target.value)} title="Приоритет">
             <option value="all">Приоритет: все</option>
             {PRIORITIES.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
@@ -189,7 +193,10 @@ export default function ProjectView({
             {hasBlankVersion && <option value="__none__">(без версии)</option>}
           </select>
           <div className="pb-taginput-wrap">
-            <button className={"pb-btn sm ghost" + ((f.tags || []).length ? " primary" : "")} onClick={() => setFiltersOpen((o) => !o)}>
+            <button
+              className={"pb-selectlike" + ((f.tags || []).length ? " active" : "")}
+              onClick={() => { setFiltersOpen((o) => !o); setDateOpen(false); }}
+            >
               Теги{(f.tags || []).length ? ` · ${f.tags.length}` : ""} ▾
             </button>
             {filtersOpen && (
@@ -204,11 +211,34 @@ export default function ProjectView({
             {filtersOpen && <div className="pb-tagscrim" onMouseDown={() => setFiltersOpen(false)} />}
           </div>
           <input className="pb-fnum" type="number" min="1" placeholder="№ задачи" value={f.num} onChange={(e) => onSetFilter("num", e.target.value)} />
-          <div className="pb-chips">
-            <button className="pb-chip" onClick={() => setPreset(1)}>Сегодня</button>
-            <button className="pb-chip" onClick={() => setPreset(7)}>7д</button>
-            <button className="pb-chip" onClick={() => setPreset(30)}>30д</button>
-            <button className={"pb-chip" + (!f.dateFrom && !f.dateTo ? " on" : "")} onClick={() => setPreset(null)}>Все даты</button>
+          <div className="pb-taginput-wrap">
+            <button
+              className={"pb-selectlike" + (dateActive ? " active" : "")}
+              onClick={() => { setDateOpen((o) => !o); setFiltersOpen(false); }}
+            >
+              {dateLabel} ▾
+            </button>
+            {dateOpen && (
+              <div className="pb-tagdrop">
+                <div className="pb-datepop">
+                  <div className="pb-chips wrap">
+                    <button className="pb-chip" onClick={() => setPreset(1)}>Сегодня</button>
+                    <button className="pb-chip" onClick={() => setPreset(7)}>7д</button>
+                    <button className="pb-chip" onClick={() => setPreset(30)}>30д</button>
+                    <button className={"pb-chip" + (!dateActive ? " on" : "")} onClick={() => setPreset(null)}>Все даты</button>
+                  </div>
+                  <div className="pb-datepop-row">
+                    <span className="pb-datepop-lbl">С</span>
+                    <input type="date" className="pb-select" value={f.dateFrom} onChange={(e) => onSetFilter("dateFrom", e.target.value)} />
+                  </div>
+                  <div className="pb-datepop-row">
+                    <span className="pb-datepop-lbl">По</span>
+                    <input type="date" className="pb-select" value={f.dateTo} onChange={(e) => onSetFilter("dateTo", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+            {dateOpen && <div className="pb-tagscrim" onMouseDown={() => setDateOpen(false)} />}
           </div>
           {activeCount > 0 && <button className="pb-btn ghost sm" onClick={onResetFilters}>✕ Сбросить</button>}
           {closedCount > 0 && (
@@ -254,6 +284,7 @@ export default function ProjectView({
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           onToggleClosed={onToggleClosed}
+          hideEmptyGroups={activeCount > 0 || !!search.trim()}
         />
       )}
 

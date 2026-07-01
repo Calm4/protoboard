@@ -101,7 +101,7 @@ export const css = `
 .pb-chip { border:1px solid var(--line); background:var(--surface); color:var(--soft); font-size:12.5px; font-weight:600; padding:5px 12px; border-radius:99px; cursor:pointer; font-family:'Inter'; }
 .pb-chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
 .pb-poschips { display:flex; flex-wrap:wrap; gap:6px; }
-.pb-fnum { font-family:'Inter'; font-size:12.5px; border:1px solid var(--line); border-radius:8px; padding:5px 8px; background:var(--surface); color:var(--ink); width:96px; outline:none; }
+.pb-fnum { font-family:'Inter'; font-size:12.5px; font-weight:600; border:1px solid var(--line); border-radius:8px; padding:5px 10px; background:var(--surface); color:var(--ink); width:96px; outline:none; }
 .pb-fnum:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
 .pb-fcount { font-family:'Space Mono'; font-size:11px; color:var(--soft); }
 .pb-btn:disabled { opacity:.45; cursor:default; box-shadow:none; transform:none; }
@@ -132,7 +132,7 @@ export const css = `
 .pb-card { background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:11px 12px; margin-bottom:9px; cursor:grab; transition:transform .12s ease, box-shadow .12s ease; }
 .pb-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(20,22,31,.09); }
 .pb-card:active { cursor:grabbing; }
-.pb-card h4 { font-size:13.5px; font-weight:600; margin:0 0 7px; line-height:1.35; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.pb-card h4 { font-size:13.5px; font-weight:600; margin:0 0 7px; line-height:1.35; white-space:pre-wrap; word-break:break-word; max-height:calc(1.35em * 3); overflow:hidden; }
 .pb-cardfoot { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
 .pb-prio { font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; }
 .pb-prio.high { color:#B23636; background:#FBE7E7; }
@@ -187,7 +187,7 @@ export const css = `
 /* panel */
 .pb-scrim { position:fixed; inset:0; background:rgba(15,17,26,.32); z-index:40; animation:pbfade .15s ease; }
 @keyframes pbfade { from { opacity:0 } to { opacity:1 } }
-.pb-panel { position:fixed; top:0; right:0; bottom:0; width:min(620px,94vw); background:var(--surface); z-index:50; box-shadow:-12px 0 40px rgba(15,17,26,.18); padding:24px 32px; overflow-y:auto; animation:pbslide .2s ease; }
+.pb-panel { position:fixed; top:0; right:0; bottom:0; width:min(720px,94vw); background:var(--surface); z-index:50; box-shadow:-12px 0 40px rgba(15,17,26,.18); padding:24px 32px; overflow-y:auto; animation:pbslide .2s ease; }
 @keyframes pbslide { from { transform:translateX(30px); opacity:.4 } to { transform:translateX(0); opacity:1 } }
 .pb-panel .x { float:right; border:none; background:var(--surface2); width:30px; height:30px; border-radius:8px; cursor:pointer; color:var(--soft); font-size:15px; }
 .pb-field { margin-bottom:18px; }
@@ -198,7 +198,7 @@ export const css = `
 .pb-input.mono { font-family:'Space Mono'; width:120px; }
 .pb-titleinput { font-family:'Space Grotesk'; font-weight:600; font-size:18px; border:none; width:100%; padding:0; margin:6px 0 16px; color:var(--ink); }
 .pb-titleinput:focus { outline:none; }
-.pb-titlearea { font-family:'Space Grotesk'; font-weight:600; font-size:18px; line-height:1.35; border:1px solid transparent; border-radius:8px; width:100%; padding:6px 8px; margin:6px -8px 16px; color:var(--ink); background:transparent; resize:vertical; min-height:54px; max-height:340px; overflow-y:auto; }
+.pb-titlearea { font-family:'Space Grotesk'; font-weight:600; font-size:18px; line-height:1.35; border:1px solid transparent; border-radius:8px; width:100%; padding:6px 8px; margin:6px -8px 16px; color:var(--ink); background:transparent; resize:vertical; min-height:54px; max-height:480px; overflow-y:auto; }
 .pb-titlearea:hover { border-color:var(--line); }
 .pb-titlearea:focus { outline:none; border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px var(--accent-soft); }
 .pb-seg { display:flex; gap:6px; flex-wrap:wrap; }
@@ -223,6 +223,12 @@ export const css = `
 .pb-shotadd { border:1px dashed var(--line); border-radius:9px; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; color:var(--soft); cursor:pointer; font-size:12px; text-align:center; padding:6px; }
 .pb-shotadd:hover { color:var(--accent); border-color:var(--accent); }
 .pb-paneldelete { color:#B23636; background:transparent; border:none; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer; margin-top:6px; }
+
+/* Кнопка «выполнено» внутри панели задачи */
+.pb-taskdone-btn{ display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line); background:var(--surface); border-radius:8px; padding:5px 11px; font-family:'Inter'; font-weight:600; font-size:12px; color:var(--soft); cursor:pointer; }
+.pb-taskdone-btn:hover{ color:var(--ink); border-color:var(--done); }
+.pb-taskdone-btn.done{ background:rgba(22,160,106,.1); color:var(--done); border-color:rgba(22,160,106,.3); }
+.pb-taskdone-btn .pb-closebtn{ margin-top:0; pointer-events:none; }
 
 /* название проекта в шапке — статичный текст, правится только в настройках (⚙) */
 .pb-nameedit { font-family:'Space Grotesk'; font-weight:700; font-size:26px; letter-spacing:-.02em; color:var(--ink); }
@@ -468,8 +474,19 @@ export const css = `
 .pb-taginput:focus{ border-color:var(--accent); }
 .pb-tagdrop{ position:absolute; top:calc(100% + 4px); left:0; z-index:210; background:var(--panel); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.1); min-width:160px; max-height:200px; overflow-y:auto; padding:4px; }
 .pb-tagdrop .pb-taginput{ width:100%; box-sizing:border-box; border-style:solid; margin-bottom:4px; border-radius:8px; }
-.pb-tagopt{ display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:7px 10px; font-size:13px; color:var(--text); border-radius:7px; }
+.pb-tagopt{ display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:7px 10px; font-size:13px; color:var(--text); border-radius:7px; }
 .pb-tagopt:hover{ background:var(--bg); }
+.pb-tagopt.on{ background:var(--accent-soft); color:var(--accent); font-weight:600; }
+.pb-tagopt.on:hover{ background:var(--accent-soft); }
+.pb-tagopt.on::after{ content:"✓"; font-size:12px; }
+
+/* Кнопка-триггер фильтра, выглядящая как pb-select (Теги / Дата) */
+.pb-selectlike{ font-family:'Inter'; font-size:12.5px; font-weight:600; border:1px solid var(--line); border-radius:8px; padding:5px 10px; background:var(--surface); color:var(--ink); cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.pb-selectlike.active{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.pb-datepop{ display:flex; flex-direction:column; gap:8px; padding:8px; min-width:220px; }
+.pb-datepop-row{ display:flex; align-items:center; gap:6px; }
+.pb-datepop-row .pb-select{ flex:1; min-width:0; }
+.pb-datepop-lbl{ font-size:11px; color:var(--c-muted); width:28px; flex-shrink:0; }
 
 /* ── Исполнитель (выпадающий список участников) ──────────────────────────── */
 .pb-assignee-btn{ display:flex; align-items:center; gap:7px; width:100%; text-align:left; border:1px solid var(--line); border-radius:9px; padding:8px 11px; background:var(--surface); color:var(--ink); font-size:14px; cursor:pointer; font-family:'Inter'; }
