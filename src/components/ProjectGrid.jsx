@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import HeaderControls from "./HeaderControls.jsx";
 import GlobalSearch from "./GlobalSearch.jsx";
+import Logo from "./Logo.jsx";
 import { useT } from "../lib/i18n.js";
 
 const isHoldStatus = (label) => {
@@ -48,7 +49,7 @@ export default function ProjectGrid({
     <>
       <div className="pb-top">
         <div className="pb-brand">
-          <span className="pb-logo">Proto<b>board</b></span>
+          <Logo />
         </div>
         <GlobalSearch allProjects={allProjects} user={user} onOpenTask={onOpenTask} onOpenProject={onOpen} onRequestJoin={onRequestJoin} />
         <div style={{ display: "flex", gap: 8, alignItems: "center", justifySelf: "end" }}>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Logo from "./Logo.jsx";
 
 export default function LoginScreen({ onSignIn, onSignInAnon }) {
   const [loading, setLoading] = useState(false);
@@ -51,7 +52,7 @@ export default function LoginScreen({ onSignIn, onSignInAnon }) {
       `}</style>
       <div className="pb-login-wrap">
         <div className="pb-login">
-          <span className="pb-logo">Proto<b>board</b></span>
+          <Logo />
           <p className="pb-login-sub">Войди через Google, чтобы<br />получить доступ к трекеру.</p>
           <button className="pb-btn-google" onClick={handleSignIn} disabled={loading}>
             <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">

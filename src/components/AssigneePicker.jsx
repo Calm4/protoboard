@@ -52,8 +52,16 @@ export default function AssigneePicker({ value, projectMembers, users, onChange 
           <button className="pb-tagopt" onMouseDown={() => pick("")}>{t("Без исполнителя")}</button>
           {filtered.map((u) => (
             <button key={u.uid} className="pb-tagopt" onMouseDown={() => pick(u.uid)}>
-              {personName(u)}
-              {personPosition(u) && <span className="pb-memberposition"> · {personPosition(u)}</span>}
+              <span className="pb-tagopt-person">
+                {u.photoURL
+                  ? <img src={u.photoURL} width={20} height={20} className="pb-usermenu-avatar" referrerPolicy="no-referrer" />
+                  : <span className="pb-usermenu-avatar fallback pb-assignee-fallback">{(personName(u) || "?")[0].toUpperCase()}</span>
+                }
+                <span>
+                  {personName(u)}
+                  {personPosition(u) && <span className="pb-memberposition"> · {personPosition(u)}</span>}
+                </span>
+              </span>
             </button>
           ))}
           {filtered.length === 0 && <div className="pb-act-row muted">{t("В проекте нет участников")}</div>}

@@ -34,6 +34,8 @@ export const css = `
 .pb-brand { display:flex; align-items:baseline; gap:10px; }
 .pb-logo { font-family:'Space Grotesk'; font-weight:700; font-size:22px; letter-spacing:-.02em; }
 .pb-logo b { color:var(--accent); }
+.pb-brand-logo { display:inline-flex; align-items:center; gap:8px; }
+.pb-logo-icon { width:26px; height:26px; border-radius:8px; object-fit:cover; display:block; flex-shrink:0; }
 .pb-tag { font-family:'Space Mono'; font-size:11px; color:var(--soft); letter-spacing:.02em; padding:3px 7px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
 .pb-sub { color:var(--soft); font-size:13.5px; margin:2px 0 24px; }
 
@@ -496,6 +498,7 @@ export const css = `
 .pb-tagopt.on{ background:var(--accent-soft); color:var(--accent); font-weight:600; }
 .pb-tagopt.on:hover{ background:var(--accent-soft); }
 .pb-tagopt.on::after{ content:"✓"; font-size:12px; }
+.pb-tagopt-person{ display:flex; align-items:center; gap:7px; }
 
 /* Кнопка-триггер фильтра, выглядящая как pb-select (Теги / Дата) */
 .pb-selectlike{ font-family:'Inter'; font-size:12.5px; font-weight:600; border:1px solid var(--line); border-radius:8px; padding:5px 10px; background:var(--surface); color:var(--ink); cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }

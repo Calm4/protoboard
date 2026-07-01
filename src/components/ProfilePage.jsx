@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { POSITIONS } from "../constants.js";
 import { personName } from "../lib/people.js";
 import { useT } from "../lib/i18n.js";
+import Logo from "./Logo.jsx";
 
 // Полноэкранная страница профиля (не поп-ап): аватар, редактируемые имя/должность,
 // роль, «мои проекты» и «мои задачи» на всю ширину, выход.
@@ -34,7 +35,7 @@ export default function ProfilePage({
     <>
       <div className="pb-top">
         <div className="pb-brand pb-projectbrand" onClick={onBack} title={t("На главную")}>
-          <span className="pb-logo">Proto<b>board</b></span>
+          <Logo />
         </div>
         <span />
         <div style={{ justifySelf: "end", display: "flex", gap: 8 }}>

@@ -5,7 +5,7 @@ import StatsView from "./StatsView.jsx";
 import { EditableInput } from "./Editable.jsx";
 import HeaderControls from "./HeaderControls.jsx";
 import GlobalSearch from "./GlobalSearch.jsx";
-import MembersModal from "./MembersModal.jsx";
+import Logo from "./Logo.jsx";
 import ProjectSettingsModal from "./ProjectSettingsModal.jsx";
 import { PRIORITIES, GLOBAL_TAGS, GRADIENTS } from "../constants.js";
 import { useT } from "../lib/i18n.js";
@@ -27,10 +27,9 @@ export default function ProjectView({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
   const [bannerPickerPos, setBannerPickerPos] = useState({ top: 0, right: 0 });
-  const [membersOpen, setMembersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const closedCount = project.tasks.filter((t) => t.closed).length;
+  const closedCount = project.tasks.filter((task) => task.closed).length;
 
   const f = filters;
   const versions = [...new Set(project.tasks.map((t) => t.version).filter(Boolean))]
@@ -92,7 +91,7 @@ export default function ProjectView({
     <>
       <div className="pb-top">
         <div className="pb-brand pb-projectbrand" onClick={onBack} title={t("На главную")}>
-          <span className="pb-logo">Proto<b>board</b></span>
+          <Logo />
         </div>
         <GlobalSearch allProjects={allProjects} user={user} onOpenTask={onOpenTaskGlobal} onOpenProject={onOpenProjectGlobal} onRequestJoin={onRequestJoin} />
         <div style={{ justifySelf: "end" }}>
@@ -312,17 +311,6 @@ export default function ProjectView({
         </div>
       )}
 
-      {membersOpen && (
-        <MembersModal
-          members={project.members || []}
-          users={users}
-          currentUid={user.uid}
-          onAdd={(uid) => onAddMember(uid)}
-          onRemove={(uid) => onRemoveMember(uid)}
-          onClose={() => setMembersOpen(false)}
-        />
-      )}
-
       {settingsOpen && (
         <ProjectSettingsModal
           project={project}
@@ -332,7 +320,10 @@ export default function ProjectView({
           statusActions={statusActions}
           onAddProjectTag={onAddProjectTag}
           onRemoveProjectTag={onRemoveProjectTag}
-          onOpenMembers={() => { setSettingsOpen(false); setMembersOpen(true); }}
+          users={users}
+          currentUid={user.uid}
+          onAddMember={onAddMember}
+          onRemoveMember={onRemoveMember}
           onClose={() => setSettingsOpen(false)}
         />
       )}

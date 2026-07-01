@@ -1,19 +1,24 @@
 import { useState } from "react";
 import { EditableInput } from "./Editable.jsx";
 import ColorSwatches from "./ColorSwatches.jsx";
+import MembersFieldset from "./MembersFieldset.jsx";
 import { GRADIENTS, GLOBAL_TAGS } from "../constants.js";
 import { useT } from "../lib/i18n.js";
 
-// Все настройки проекта в одном месте: название, фон, статусы, теги, участники.
-// Название — осознанно с явной кнопкой «Сохранить», а не авто-коммит по blur.
+// Все настройки проекта в одном месте: название, участники, фон, статусы, теги.
+// Название — осознанно с явной кнопкой «Сохранить» (в подвале модалки), а не
+// авто-коммит по blur. Участники — раскрывающийся список сразу под названием,
+// а не отдельная модалка поверх этой (было раньше, лишний слой).
 export default function ProjectSettingsModal({
   project, onSetName, onSetColor, onSetGradient, statusActions,
-  onAddProjectTag, onRemoveProjectTag, onOpenMembers, onClose,
+  onAddProjectTag, onRemoveProjectTag, onClose,
+  users, currentUid, onAddMember, onRemoveMember,
 }) {
   const t = useT();
   const [name, setNameDraft] = useState(project.name);
   const [tagInput, setTagInput] = useState("");
   const [colorForStatus, setColorForStatus] = useState(null);
+  const [membersOpen, setMembersOpen] = useState(false);
 
   const nameChanged = name.trim() && name.trim() !== project.name;
   const saveName = () => { if (nameChanged) onSetName(name.trim()); };
@@ -27,8 +32,8 @@ export default function ProjectSettingsModal({
   };
 
   const addTag = () => {
-    const t = tagInput.trim();
-    if (t) onAddProjectTag(t);
+    const tag = tagInput.trim();
+    if (tag) onAddProjectTag(tag);
     setTagInput("");
   };
 
@@ -41,10 +46,25 @@ export default function ProjectSettingsModal({
 
         <div className="pb-field">
           <label>{t("Название")}</label>
-          <div className="pb-settingsrow">
-            <input className="pb-input" value={name} onChange={(e) => setNameDraft(e.target.value)} />
-            <button className="pb-btn sm" disabled={!nameChanged} onClick={saveName}>{t("Сохранить")}</button>
-          </div>
+          <input className="pb-input" value={name} onChange={(e) => setNameDraft(e.target.value)} />
+        </div>
+
+        <div className="pb-field">
+          <button className="pb-act-toggle" onClick={() => setMembersOpen((o) => !o)}>
+            {membersOpen ? "▲" : "▼"} 👥 {t("Участники")}
+            <span className="pb-act-cnt">{(project.members || []).length}</span>
+          </button>
+          {membersOpen && (
+            <div style={{ marginTop: 10 }}>
+              <MembersFieldset
+                members={project.members || []}
+                users={users}
+                currentUid={currentUid}
+                onAdd={onAddMember}
+                onRemove={onRemoveMember}
+              />
+            </div>
+          )}
         </div>
 
         <div className="pb-field">
@@ -131,9 +151,7 @@ export default function ProjectSettingsModal({
         </div>
 
         <div className="pb-modal-foot">
-          <button className="pb-btn ghost" onClick={onOpenMembers}>
-            👥 {t("Участники")} ({(project.members || []).length})
-          </button>
+          <button className="pb-btn primary" disabled={!nameChanged} onClick={saveName}>{t("Сохранить")}</button>
         </div>
       </div>
     </>
