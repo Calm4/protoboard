@@ -15,10 +15,18 @@ export default function ProjectGrid({
   active, archived, allProjects, showArchived, onToggleArchived,
   onOpen, onArchive, onUnarchive, onNewProject, onOpenTask,
   isDark, onToggleDark, onSetGradient, onDeleteProject,
-  user, onSignOut, isAdmin, role,
+  user, onSignOut, isAdmin, role, onJoinProject,
 }) {
   const [gSearch, setGSearch] = useState("");
   const [gOpen, setGOpen] = useState(false);
+
+  const uid = user.uid;
+  // members === undefined — старый проект, ещё не мигрирован (см. App.jsx): пока
+  // считаем «своим», чтобы не мигало «0 проектов» до завершения бэкфилла.
+  const isMember = (p) => (p.members === undefined ? true : p.members.includes(uid));
+  const myActive = active.filter(isMember);
+  const discoverable = active.filter((p) => !isMember(p));
+  const myArchived = archived.filter(isMember);
 
   const globalStats = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -40,18 +48,28 @@ export default function ProjectGrid({
     if (!q) return [];
     const results = [];
     allProjects.forEach((p) => {
+      if ((p.name || "").toLowerCase().includes(q)) {
+        results.push({ type: "project", project: p });
+      }
+    });
+    allProjects.forEach((p) => {
       p.tasks.forEach((t) => {
         if ((t.title || "").toLowerCase().includes(q)) {
-          results.push({ projectId: p.id, projectName: p.name, projectColor: p.color, task: t });
+          results.push({ type: "task", projectId: p.id, projectName: p.name, projectColor: p.color, task: t });
         }
       });
     });
     return results.slice(0, 24);
   }, [gSearch, allProjects]);
 
-  const handleResultClick = (pid, tid) => {
+  const handleTaskResultClick = (pid, tid) => {
     setGSearch(""); setGOpen(false);
     onOpenTask(pid, tid);
+  };
+  const handleProjectResultClick = (p) => {
+    setGSearch(""); setGOpen(false);
+    if (!isMember(p)) onJoinProject(p.id);
+    onOpen(p.id);
   };
 
   return (
@@ -61,7 +79,10 @@ export default function ProjectGrid({
           <span className="pb-logo">Proto<b>board</b></span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <HeaderControls isDark={isDark} onToggleDark={onToggleDark} user={user} role={role} onSignOut={onSignOut} />
+          <HeaderControls
+            isDark={isDark} onToggleDark={onToggleDark} user={user} role={role} onSignOut={onSignOut}
+            projects={allProjects} onOpenProject={onOpen} onOpenTask={onOpenTask}
+          />
           <button className="pb-btn primary" onClick={onNewProject}>+ Новый проект</button>
         </div>
       </div>
@@ -87,15 +108,27 @@ export default function ProjectGrid({
               {searchResults.length === 0 ? (
                 <div className="pb-gsempty">Ничего не найдено</div>
               ) : (
-                searchResults.map(({ projectId, projectName, projectColor, task }) => (
-                  <button key={task.id} className="pb-gsrow" onMouseDown={() => handleResultClick(projectId, task.id)}>
-                    <span className="pb-gsdot" style={{ background: projectColor }} />
-                    <span className="pb-gsproject">{projectName}</span>
-                    <span className="pb-gsarrow">›</span>
-                    <span className="pb-gstitle">{task.title}</span>
-                    {task.num != null && <span className="pb-num" style={{ marginLeft: "auto" }}>#{task.num}</span>}
-                  </button>
-                ))
+                searchResults.map((r) =>
+                  r.type === "project" ? (
+                    <button key={"p" + r.project.id} className="pb-gsrow" onMouseDown={() => handleProjectResultClick(r.project)}>
+                      <span className="pb-gsdot" style={{ background: r.project.color }} />
+                      <span className="pb-gsproject">{r.project.name}</span>
+                      <span className="pb-gsarrow">›</span>
+                      <span className="pb-gstitle muted">проект</span>
+                      <span className="pb-joinbadge" style={{ marginLeft: "auto" }}>
+                        {isMember(r.project) ? "Участник" : "Присоединиться"}
+                      </span>
+                    </button>
+                  ) : (
+                    <button key={r.task.id} className="pb-gsrow" onMouseDown={() => handleTaskResultClick(r.projectId, r.task.id)}>
+                      <span className="pb-gsdot" style={{ background: r.projectColor }} />
+                      <span className="pb-gsproject">{r.projectName}</span>
+                      <span className="pb-gsarrow">›</span>
+                      <span className="pb-gstitle">{r.task.title}</span>
+                      {r.task.num != null && <span className="pb-num" style={{ marginLeft: "auto" }}>#{r.task.num}</span>}
+                    </button>
+                  )
+                )
               )}
             </div>
           </>
@@ -115,9 +148,13 @@ export default function ProjectGrid({
         </div>
       )}
 
-      {/* Активные проекты */}
+      {/* Мои проекты */}
+      <div className="pb-sectionhead">
+        <h2>Мои проекты</h2>
+        <span className="rule" />
+      </div>
       <div className="pb-grid">
-        {active.map((p) => {
+        {myActive.map((p) => {
           const total = p.tasks.length;
           const done = p.tasks.filter((t) => t.status === p.statuses[p.statuses.length - 1]?.id).length;
           const pct = total ? Math.round((done / total) * 100) : 0;
@@ -140,21 +177,57 @@ export default function ProjectGrid({
             </div>
           );
         })}
-        {active.length === 0 && <div className="pb-empty">Пока нет активных проектов. Создай первый прототип.</div>}
+        {myActive.length === 0 && (
+          <div className="pb-empty">
+            Ты пока не состоишь ни в одном проекте — выбери проект ниже
+            {discoverable.length === 0 && " или создай свой"}.
+          </div>
+        )}
       </div>
 
-
-      {/* Архив */}
-      {archived.length > 0 && (
+      {/* Все проекты (те, где я ещё не участник) — можно присоединиться */}
+      {discoverable.length > 0 && (
         <>
           <div className="pb-sectionhead">
-            <h2>Архив ({archived.length})</h2>
+            <h2>Все проекты</h2>
+            <span className="rule" />
+          </div>
+          <div className="pb-grid">
+            {discoverable.map((p) => {
+              const hasGrad = !!p.gradient;
+              return (
+                <div
+                  key={p.id}
+                  className={"pb-proj" + (hasGrad ? " has-gradient" : "")}
+                  style={hasGrad ? { background: p.gradient } : undefined}
+                  onClick={() => { onJoinProject(p.id); onOpen(p.id); }}
+                >
+                  {!hasGrad && <span className="accentbar" style={{ background: p.color }} />}
+                  <button className="pb-arch-btn static" onClick={(e) => { e.stopPropagation(); onJoinProject(p.id); onOpen(p.id); }}>
+                    Присоединиться
+                  </button>
+                  <h3>{p.name}</h3>
+                  <div className="pb-meta">
+                    <span className="pb-build">{p.build}</span> · {p.tasks.length} задач
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Архив (только мои архивные проекты) */}
+      {myArchived.length > 0 && (
+        <>
+          <div className="pb-sectionhead">
+            <h2>Архив ({myArchived.length})</h2>
             <span className="rule" />
             <button className="pb-btn ghost sm" onClick={onToggleArchived}>{showArchived ? "Скрыть" : "Показать"}</button>
           </div>
           {showArchived && (
             <div className="pb-grid">
-              {archived.map((p) => {
+              {myArchived.map((p) => {
                 const hasGrad = !!p.gradient;
                 return (
                 <div

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { css } from "./styles.js";
 import { DEFAULT_COLOR, EMPTY_FILTERS, GLOBAL_TAGS } from "./constants.js";
 import { useProjects } from "./hooks/useProjects.js";
+import { useUsers } from "./hooks/useUsers.js";
 import { useAuth } from "./hooks/useAuth.js";
 import ProjectGrid from "./components/ProjectGrid.jsx";
 import ProjectView from "./components/ProjectView.jsx";
@@ -24,8 +25,26 @@ export default function Protoboard() {
     addTask, moveTask, reorderTask, editTask, deleteTask, addShots, removeShot, loadShots,
     addTag, removeTag, removeProjectTag, loadActivity,
     deleteProject, setGradient,
+    joinProject, addMember, removeMember, backfillMembers,
     undo,
   } = useProjects(!!user, user);
+
+  // Каталог всех, кто когда-либо входил (для резолва имён/поиска людей).
+  const users = useUsers(!!user);
+
+  // Одноразовый бэкфилл участников для проектов, созданных до этой фичи:
+  // подставляем всех известных пользователей, чтобы никто не потерял доступ.
+  const migratedProjectsRef = useRef(new Set());
+  useEffect(() => {
+    if (!user || users.length === 0) return;
+    const allUids = users.map((u) => u.uid);
+    projects.forEach((p) => {
+      if (p.members === undefined && !migratedProjectsRef.current.has(p.id)) {
+        migratedProjectsRef.current.add(p.id);
+        backfillMembers(p.id, allUids);
+      }
+    });
+  }, [projects, users, user, backfillMembers]);
 
   // Состояние интерфейса.
   const [openId, setOpenId] = useState(null);
@@ -82,6 +101,13 @@ export default function Protoboard() {
 
   // Действия, связывающие интерфейс с данными.
   const openProject = (id) => { setOpenId(id); setView("stats"); resetFilters(); setSearch(""); };
+  // Открыть конкретную задачу в любом проекте (из глобального поиска, «моих задач» в профиле и т.д.).
+  const openTaskInProject = (pid, tid) => {
+    openProject(pid);
+    setTaskId(tid);
+    loadShots(pid, tid);
+    loadActivity(pid, tid);
+  };
   const handleAddTask = (status) => {
     const t = addTask(openId, status, project.build);
     setTaskId(t.id);
@@ -219,12 +245,7 @@ export default function Protoboard() {
             onArchive={(id) => setArchived(id, true)}
             onUnarchive={(id) => setArchived(id, false)}
             onNewProject={() => setNewProj({ name: "", color: DEFAULT_COLOR })}
-            onOpenTask={(pid, tid) => {
-              openProject(pid);
-              setTaskId(tid);
-              loadShots(pid, tid);
-              loadActivity(pid, tid);
-            }}
+            onOpenTask={openTaskInProject}
             isDark={dark}
             onToggleDark={toggleDark}
             onSetGradient={(pid, grad) => setGradient(pid, grad)}
@@ -233,6 +254,7 @@ export default function Protoboard() {
             onSignOut={signOut}
             isAdmin={isAdmin}
             role={role}
+            onJoinProject={joinProject}
           />
         ) : (
           <ProjectView
@@ -277,6 +299,12 @@ export default function Protoboard() {
             user={user}
             role={role}
             onSignOut={signOut}
+            users={users}
+            allProjects={projects}
+            onOpenProject={openProject}
+            onOpenTaskGlobal={openTaskInProject}
+            onAddMember={(uid) => addMember(openId, uid)}
+            onRemoveMember={(uid) => removeMember(openId, uid)}
           />
         )}
       </div>
@@ -295,6 +323,8 @@ export default function Protoboard() {
           onAddTag={(tag) => addTag(openId, taskId, tag)}
           onRemoveTag={(tag) => removeTag(openId, taskId, tag)}
           availableTags={[...new Set([...GLOBAL_TAGS, ...(project?.customTags || [])])]}
+          projectMembers={project?.members || []}
+          users={users}
         />
       )}
 

@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
 import { PRIORITIES, PLATFORMS } from "../constants.js";
 import { EditableInput, EditableTextarea } from "./Editable.jsx";
+import AssigneePicker from "./AssigneePicker.jsx";
 import { downloadImage } from "../lib/image.js";
 
 export default function TaskPanel({
   task, statuses, onClose, onEdit, onMoveTask, onDelete, onAddShots, onRemoveShot,
-  onAddTag, onRemoveTag, availableTags = [],
+  onAddTag, onRemoveTag, availableTags = [], projectMembers = [], users = [],
 }) {
   const fileRef = useRef(null);
   const [zoom, setZoom] = useState(null);
@@ -99,7 +100,12 @@ export default function TaskPanel({
         </div>
         <div className="pb-field">
           <label>Исполнитель</label>
-          <EditableInput className="pb-input" value={task.assignee || ""} placeholder="Имя…" onCommit={(v) => onEdit({ assignee: v })} />
+          <AssigneePicker
+            value={task.assignee || ""}
+            projectMembers={projectMembers}
+            users={users}
+            onChange={(uid) => onEdit({ assignee: uid })}
+          />
         </div>
         <div className="pb-field">
           <label>Дедлайн</label>

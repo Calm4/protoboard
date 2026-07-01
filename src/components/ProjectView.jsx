@@ -5,6 +5,7 @@ import StatsView from "./StatsView.jsx";
 import { EditableInput } from "./Editable.jsx";
 import ColorSwatches from "./ColorSwatches.jsx";
 import HeaderControls from "./HeaderControls.jsx";
+import MembersModal from "./MembersModal.jsx";
 import { PRIORITIES, GLOBAL_TAGS, GRADIENTS } from "../constants.js";
 
 export default function ProjectView({
@@ -13,6 +14,7 @@ export default function ProjectView({
   onSetGradient, onAddTask, onMoveTask, onReorderTask, onSetPriority, onSetPlatform,
   onToggleClosed, onOpenTask, statusActions, onRemoveProjectTag, onDeleteTask,
   isDark, onToggleDark, user, role, onSignOut,
+  users, allProjects, onOpenProject, onOpenTaskGlobal, onAddMember, onRemoveMember,
 }) {
   const statuses = project.statuses;
   const [palette, setPalette] = useState(false);
@@ -21,6 +23,7 @@ export default function ProjectView({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
   const [bannerPickerPos, setBannerPickerPos] = useState({ top: 0, right: 0 });
+  const [membersOpen, setMembersOpen] = useState(false);
 
   const closedCount = project.tasks.filter((t) => t.closed).length;
 
@@ -76,10 +79,12 @@ export default function ProjectView({
     <>
       <div className="pb-top">
         <div className="pb-brand pb-projectbrand" onClick={onBack} title="На главную">
-          <span className="pb-back-arrow">←</span>
-          <span className="pb-logo">{project.name}</span>
+          <span className="pb-logo">Proto<b>board</b></span>
         </div>
-        <HeaderControls isDark={isDark} onToggleDark={onToggleDark} user={user} role={role} onSignOut={onSignOut} />
+        <HeaderControls
+          isDark={isDark} onToggleDark={onToggleDark} user={user} role={role} onSignOut={onSignOut}
+          projects={allProjects} onOpenProject={onOpenProject} onOpenTask={onOpenTaskGlobal}
+        />
       </div>
 
       {/* Баннер-градиент вверху проекта (как у Slack) */}
@@ -143,6 +148,9 @@ export default function ProjectView({
             <button className={view === "board" ? "on" : ""} onClick={() => onSetView("board")}>Доска</button>
             <button className={view === "list" ? "on" : ""} onClick={() => onSetView("list")}>Список</button>
           </div>
+          <button className="pb-btn sm ghost" onClick={() => setMembersOpen(true)}>
+            👥 Участники ({(project.members || []).length})
+          </button>
           {view !== "stats" && (
             <>
               <div className="pb-controls-sep" />
@@ -306,6 +314,16 @@ export default function ProjectView({
         </div>
       )}
 
+      {membersOpen && (
+        <MembersModal
+          members={project.members || []}
+          users={users}
+          currentUid={user.uid}
+          onAdd={(uid) => onAddMember(uid)}
+          onRemove={(uid) => onRemoveMember(uid)}
+          onClose={() => setMembersOpen(false)}
+        />
+      )}
     </>
   );
 }

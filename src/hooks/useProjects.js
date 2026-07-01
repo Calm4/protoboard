@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   collection, doc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot,
-  getDocs, query, where,
+  getDocs, query, where, arrayUnion, arrayRemove,
 } from "firebase/firestore";
 import { db, isConfigured } from "../lib/firebase.js";
 import { compressImage } from "../lib/image.js";
@@ -52,6 +52,8 @@ const rowToProject = (data) => ({
   statuses: (data.statuses && data.statuses.length) ? data.statuses : DEFAULT_STATUSES,
   customTags: Array.isArray(data.customTags) ? data.customTags : [],
   gradient: data.gradient || "",
+  // undefined = старый проект, участники ещё не мигрированы; [] = легитимно «никого».
+  members: Array.isArray(data.members) ? data.members : undefined,
   _createdAt: typeof data.createdAt === "number" ? data.createdAt : 0,
   tasks: [],
 });
@@ -217,10 +219,11 @@ export function useProjects(enabled = true, currentUser = null) {
     if (!trimmed) return null;
     const id = newId();
     const statuses = DEFAULT_STATUSES;
-    const proj = { id, name: trimmed, build: "v0.1", archived: false, color, statuses, tasks: [] };
+    const members = currentUser?.uid ? [currentUser.uid] : [];
+    const proj = { id, name: trimmed, build: "v0.1", archived: false, color, statuses, members, tasks: [] };
     setProjects((ps) => [proj, ...ps]);
     run(setDoc(doc(db, "projects", id), {
-      name: trimmed, build: "v0.1", archived: false, color, statuses, createdAt: Date.now(),
+      name: trimmed, build: "v0.1", archived: false, color, statuses, members, createdAt: Date.now(),
     }));
     pushUndo({
       label: "создание проекта",
@@ -230,6 +233,27 @@ export function useProjects(enabled = true, currentUser = null) {
       },
     });
     return proj;
+  };
+
+  // ── Участники проекта ───────────────────────────────────────────────────────
+  const joinProject = (pid) => {
+    if (!currentUser?.uid) return;
+    patchProjectLocal(pid, (p) => ({ ...p, members: [...new Set([...(p.members || []), currentUser.uid])] }));
+    run(updateDoc(doc(db, "projects", pid), { members: arrayUnion(currentUser.uid) }));
+  };
+  const addMember = (pid, uid) => {
+    patchProjectLocal(pid, (p) => ({ ...p, members: [...new Set([...(p.members || []), uid])] }));
+    run(updateDoc(doc(db, "projects", pid), { members: arrayUnion(uid) }));
+  };
+  const removeMember = (pid, uid) => {
+    patchProjectLocal(pid, (p) => ({ ...p, members: (p.members || []).filter((u) => u !== uid) }));
+    run(updateDoc(doc(db, "projects", pid), { members: arrayRemove(uid) }));
+  };
+  // Одноразовый бэкфилл для старых проектов (members === undefined): подставляем
+  // всех, кто уже когда-либо входил, чтобы никто не потерял доступ.
+  const backfillMembers = (pid, uids) => {
+    patchProjectLocal(pid, (p) => ({ ...p, members: uids }));
+    run(updateDoc(doc(db, "projects", pid), { members: uids }));
   };
 
   const setColor = (id, color) => {
@@ -611,6 +635,7 @@ export function useProjects(enabled = true, currentUser = null) {
     addTag, removeTag, removeProjectTag,
     loadActivity,
     deleteProject,
+    joinProject, addMember, removeMember, backfillMembers,
     undo,
   };
 }

@@ -296,6 +296,8 @@ export const css = `
 .pb-gsproject { font-size:11px; color:var(--c-muted); font-weight:600; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
 .pb-gsarrow { color:var(--line); flex-shrink:0; }
 .pb-gstitle { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pb-gstitle.muted { color:var(--c-muted); font-style:italic; }
+.pb-joinbadge { font-size:11px; color:var(--c-muted); white-space:nowrap; }
 .pb-gsempty { padding:14px 12px; color:var(--c-muted); font-size:13px; }
 
 /* ── Общая статистика на главной ─────────────────────────────────────────── */
@@ -374,8 +376,7 @@ export const css = `
 .pb-usermenu-avatar { width:24px; height:24px; border-radius:50%; display:block; }
 .pb-usermenu-avatar.fallback { background:var(--accent); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
 .pb-projectbrand { cursor:pointer; }
-.pb-back-arrow { color:var(--soft); font-size:16px; }
-.pb-projectbrand:hover .pb-back-arrow, .pb-projectbrand:hover .pb-logo { color:var(--accent); }
+.pb-projectbrand:hover .pb-logo { color:var(--accent); }
 
 /* ── Профиль (модал) ──────────────────────────────────────────────────────── */
 .pb-profile-head { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
@@ -385,6 +386,20 @@ export const css = `
 .pb-profile-email { font-size:13px; color:var(--c-muted); margin-top:2px; }
 .pb-rolechip { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; background:var(--surface2); color:var(--soft); margin-bottom:20px; }
 .pb-rolechip.admin { background:rgba(178,54,54,.12); color:#B23636; }
+
+/* ── Участники проекта (модал) ────────────────────────────────────────────── */
+.pb-members-modal { max-width:420px; }
+.pb-memberlist { display:flex; flex-direction:column; gap:2px; max-height:260px; overflow-y:auto; margin-bottom:18px; }
+.pb-memberrow { display:flex; align-items:center; gap:10px; padding:7px 2px; border-bottom:1px solid var(--line); }
+.pb-memberrow:last-child { border-bottom:none; }
+.pb-memberavatar { width:28px; height:28px; border-radius:50%; display:block; flex-shrink:0; }
+.pb-memberavatar.fallback { background:var(--accent); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.pb-membermeta { flex:1; min-width:0; }
+.pb-membername { font-size:13.5px; font-weight:500; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pb-memberemail { font-size:11.5px; color:var(--c-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pb-memberrow .pb-tag-x { flex-shrink:0; font-size:12px; padding:4px 8px; border-radius:7px; background:var(--surface2); opacity:1; }
+.pb-memberrow .pb-tag-x:hover { background:rgba(178,54,54,.12); color:#B23636; }
+.pb-memberadd-list { margin-top:6px; border:1px solid var(--line); border-radius:10px; max-height:180px; overflow-y:auto; padding:4px; }
 
 /* ── Кнопка «выполнено» (Asana-style checkbox) ───────────────────────────── */
 .pb-closebtn { width:17px; height:17px; border-radius:50%; border:2px solid var(--line); background:transparent; cursor:pointer; flex-shrink:0; padding:0; position:relative; transition:border-color .12s, background .12s; margin-top:1px; }
@@ -440,8 +455,15 @@ export const css = `
 .pb-taginput{ border:1px dashed var(--line); background:transparent; border-radius:20px; padding:3px 10px; font-size:12px; color:var(--text); outline:none; width:130px; transition:border-color .15s; }
 .pb-taginput:focus{ border-color:var(--accent); }
 .pb-tagdrop{ position:absolute; top:calc(100% + 4px); left:0; z-index:210; background:var(--panel); border:1px solid var(--line); border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.1); min-width:160px; max-height:200px; overflow-y:auto; padding:4px; }
+.pb-tagdrop .pb-taginput{ width:100%; box-sizing:border-box; border-style:solid; margin-bottom:4px; border-radius:8px; }
 .pb-tagopt{ display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:7px 10px; font-size:13px; color:var(--text); border-radius:7px; }
 .pb-tagopt:hover{ background:var(--bg); }
+
+/* ── Исполнитель (выпадающий список участников) ──────────────────────────── */
+.pb-assignee-btn{ display:flex; align-items:center; gap:7px; width:100%; text-align:left; border:1px solid var(--line); border-radius:9px; padding:8px 11px; background:var(--surface); color:var(--ink); font-size:14px; cursor:pointer; font-family:'Inter'; }
+.pb-assignee-btn:hover{ border-color:var(--accent); }
+.pb-assignee-btn .muted{ color:var(--c-muted); }
+.pb-assignee-fallback{ width:20px!important; height:20px!important; font-size:10px!important; }
 .pb-tagopt.new{ color:var(--accent); font-weight:500; }
 .pb-tagscrim{ position:fixed; inset:0; z-index:200; }
 .pb-tag-sm{ display:inline-block; background:var(--bg); color:var(--c-muted); border-radius:20px; padding:1px 7px; font-size:11px; }
@@ -455,8 +477,10 @@ export const css = `
 .pb-activity{ margin-top:8px; display:flex; flex-direction:column; gap:0; max-height:220px; overflow-y:auto; }
 .pb-act-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line); }
 .pb-act-row:last-child{ border-bottom:none; }
-.pb-act-action{ font-size:12px; color:var(--text); }
+.pb-act-action{ font-size:12px; color:var(--text); display:flex; align-items:center; gap:6px; }
 .pb-act-author{ color:var(--c-muted); }
+.pb-act-row-btn{ width:100%; background:none; border:none; cursor:pointer; text-align:left; border-radius:7px; padding-left:4px; padding-right:4px; }
+.pb-act-row-btn:hover{ background:var(--hover); }
 .pb-act-time{ font-size:11px; color:var(--c-muted); flex-shrink:0; margin-left:8px; }
 .pb-act-row.muted{ color:var(--c-muted); font-size:12px; }
 
